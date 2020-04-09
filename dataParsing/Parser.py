@@ -1,4 +1,4 @@
-from FileData import ReviewData
+from dataParsing.FileData import ReviewData
 
 
 class Parser:

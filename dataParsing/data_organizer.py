@@ -1,12 +1,8 @@
-import numpy as np
-import pandas as pd
-from pandas import DataFrame
-
-from Parser import LargeFileParser
-from FileData import *
+from dataParsing.Parser import LargeFileParser
+from dataParsing.FileData import *
 
 
-LARGE_INPUT_FILE = 'ml-dataset/movies.txt'
+LARGE_INPUT_FILE = '../ml-dataset/movies.txt'
 LARGE_INPUT_FILE_ENCODING = 'iso-8859-1'
 STEP_SIZE = 100000
 
@@ -22,11 +18,11 @@ def parse_file(path):
     remaining = length
     parser = LargeFileParser(path, LARGE_INPUT_FILE_ENCODING)
     while remaining > 0:
-        file_data.append(FileData(parser, STEP_SIZE))
+        file_data.append(FileData(parser=parser, step_size=STEP_SIZE))
         remaining = length - parser.get_line_cursor()
 
     for i, data in enumerate(file_data):
-        data.write_to_file('out/{0}_{1}.txt'.format(path.split('.')[0].split('/')[1], i + 1))
+        data.write_to_file('../out/{0}_{1}.txt'.format(path.split('.')[0].split('/')[1], i + 1))
 
 
 def main():
