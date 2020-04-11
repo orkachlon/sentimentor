@@ -3,4 +3,12 @@ First project in the course 'Machine learning as a tool for interactive products
 
 
 Planning to use Amazon movie dataset. It's too big to add so here's the link to
-where I got it from: http://snap.stanford.edu/data/web-Movies.html 
+where I got it from: http://snap.stanford.edu/data/web-Movies.html
+
+Not sure if this is needed but I wrote some code that uses pretrained models from 'gensim' to turn words into
+vectors using the Word2Vec algorithm. This might help since, using this technique, similar words are mapped to
+similar vectors. That makes it easier make good context of words and sentences.
+
+I might need to map whole reviews into vectors as well.
+
+TODO Change make names clearer (/models/, model.py)

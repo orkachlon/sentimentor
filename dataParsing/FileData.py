@@ -41,13 +41,13 @@ class ReviewData:
 
     def __init__(self, score: float, text: str):
         self.__score = score
-        self.__text = text
+        self.__text = text.replace('\n', ' ').replace('"', r'\"')
 
     def __repr__(self):
-        return 'score: {0}\ntext:  {1}\n'.format(self.__score, self.__text)
+        return 'score: {0}\ntext: "{1}"\n'.format(self.__score, self.__text)
 
     def __str__(self):
-        return '{0}, {1}'.format(self.__score, self.__text)
+        return '{0},"{1}"\n'.format(self.__score, self.__text)
 
     def get_score(self):
         return self.__score
