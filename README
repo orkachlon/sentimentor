@@ -1,14 +1,46 @@
 # interactive-ml-project-1
 First project in the course 'Machine learning as a tool for interactive products'
 
+=========
+= Files =
+=========
 
-Planning to use Amazon movie dataset. It's too big to add so here's the link to
-where I got it from: http://snap.stanford.edu/data/web-Movies.html
+textVectorization/model.py: Word2Vec model creator
+    dependencies: gensim
+    recommended: cython - needed for faster training speed
+textVectorization/RakeExtractor.py: An attempt at the RAKE algorithm using nltk
+    dependencies
+dataParsing/data_organizer.py: An organizer for the 8mil reviews file
+    dependencies: FileData, Parser
 
-Not sure if this is needed but I wrote some code that uses pretrained models from 'gensim' to turn words into
+===============
+= Description =
+===============
+
+This research project attempts to change a given text's sentiment without altering its structure/
+
+=========
+= TODOS =
+=========
+
+TODO try link no. 1
+
+=========
+= LINKS =
+=========
+
+1. Possible entire implementation of classifier including access to influential words:
+https://towardsdatascience.com/basic-binary-sentiment-analysis-using-nltk-c94ba17ae386
+
+2. Amazon 8 million review data set:
+http://snap.stanford.edu/data/web-Movies.html
+
+=========
+= Notes =
+=========
+
+Not sure if this is needed but I wrote some code that uses pre-trained models from 'gensim' to turn words into
 vectors using the Word2Vec algorithm. This might help since, using this technique, similar words are mapped to
 similar vectors. That makes it easier make good context of words and sentences.
 
 I might need to map whole reviews into vectors as well.
-
-TODO Change make names clearer (/models/, model.py)
