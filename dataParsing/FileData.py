@@ -35,14 +35,21 @@ class FileData:
         """
         return str(self.__reviews)
 
-    def __read_from_file(self, path, limit):
+    def __iter__(self):
+        return iter(self.__reviews)
+
+    def __read_from_file(self, path, limit, encoding='utf-8'):
         """
         Reads the reviews from a csv file
         :param path: path to reviews file
         ":param limit: maximum number of reviews to read
         """
-        self.__reviews = [ReviewData(row['score'], row['text']) for row in
-                          csv.DictReader(path, quotechar='"', escapechar='\\', sep=',')[1: limit]]
+        with open(path) as f:
+            reader = csv.DictReader(f, quotechar='"', escapechar='\\', delimiter=',', skipinitialspace=True)
+            for i, row in enumerate(reader):
+                if i >= limit:
+                    break
+                self.__reviews.append(ReviewData(row['score'], row['text']))
         # DEPRECATED
         # with open(path, 'r', encoding=self.__encoding) as f:
         #     for line in f:
@@ -64,7 +71,7 @@ class FileData:
         if format == 'csv':  # CSV format
             with open(filename, 'w', encoding=encoding) as f:
                 f.write('score,text\n')
-                f.writelines([str(review) for review in self.__reviews])
+                f.writelines([f"{str(review)}\n" for review in self.__reviews])
         if format == 'ls':  # LineSentence format
             with open(filename, 'w', encoding=encoding) as f:
                 f.writelines([review.get_text() for review in self.__reviews])
@@ -88,13 +95,13 @@ class ReviewData:
         """
         :return: Readable representation of this review
         """
-        return 'score: {0}\ntext: "{1}"\n'.format(self.__score, self.__text)
+        return f'score: {self.__score}\ntext: "{self.__text}"\n'
 
     def __str__(self):
         """
         :return: String representation of this review. Format is CSV.
         """
-        return '{0},"{1}"\n'.format(self.__score, self.__text)
+        return f'{self.__score},"{self.__text}"'
 
     def get_score(self):
         """

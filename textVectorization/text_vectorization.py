@@ -8,7 +8,6 @@ import gensim.downloader as api
 
 from dataParsing.data_organizer import LARGE_INPUT_FILE_ENCODING
 
-
 WORD_SPACE_DIM = 300
 
 
@@ -17,16 +16,22 @@ class TextGenerator:
     def __init__(self, path, limit=0):
         self.__path = path
         self.__limit = max(limit, 0)
+        self.__times_iterated = 0
 
     def __iter__(self):
+        self.__times_iterated += 1
+        print(f"Starting iteration no. {self.__times_iterated} over data set")
         if os.path.isdir(self.__path):
             print("Folder path given. Generating reviews from {0}".format(self.__path))
-            for j, file in enumerate(random.shuffle(os.listdir(self.__path))):
+            amount = min(len(os.listdir(self.__path)), self.__limit)
+            file_list = os.listdir(self.__path)
+            random.shuffle(file_list)
+            for j, file in enumerate(file_list):
                 if j == self.__limit:
                     break
                 file_path = os.path.join(self.__path, file)
                 if os.path.isfile(file_path):
-                    print("Training on {0}...".format(file))
+                    print(f"{((j / amount) * 100.00):.02f}% done. Training on {file}...")
                     for i, line in enumerate(open(file_path, 'r', encoding=LARGE_INPUT_FILE_ENCODING)):
                         if i == 0:
                             continue
@@ -35,7 +40,7 @@ class TextGenerator:
                         delim_i = line.find(',')
                         yield utils.simple_preprocess(line[delim_i + 1:])
         else:
-            print("File path given. Generating reviews from {0}".format(self.__path))
+            print(f"File path given. Generating reviews from {self.__path}")
             for i, line in enumerate(open(self.__path, 'r', encoding=LARGE_INPUT_FILE_ENCODING)):
                 if i == 0:
                     continue
@@ -63,9 +68,9 @@ def save_model(path, model, n=0):
     :param model: model to be saved
     :param n: (optional) serial number to add to the file name
     """
-    print("Saving to {0}...".format(path))
-    save_path = os.path.join('..',
-                             os.path.join('textVectorizationModels', '{0}_{1}.model'.format(os.path.basename(path).split('.')[0], n)))
+    print(f"Saving to {path}...")
+    save_path = os.path.join('..', os.path.join('textVectorizationModels',
+                                                f"{os.path.basename(path).split('.')[0]}_{n}.model"))
     model.save(save_path)
     print("Done!")
 
@@ -77,7 +82,7 @@ def load_model(path, local=True):
     :param local: (bool) whether the model is stored locally or not
     :return: loaded model
     """
-    print("Loading model from {0}...".format(path))
+    print(f"Loading model from {path}...")
     if local:
         return gensim.models.KeyedVectors.load(path)
     return api.load(path)
@@ -85,14 +90,17 @@ def load_model(path, local=True):
 
 def main(path_to_data, load=False, local=True, limit=0, save=True):
     if load:
-        load_path = os.path.join(r'../textVectorizationModels', path_to_data + '.model')
+        load_path = os.path.join(r'../textVectorizationModels', f"{path_to_data}.model")
         model = load_model(load_path, local)
         # print(model.wv.doesnt_match(['favorite', 'best', 'good', 'bad']))
         # print(model.similarity('best', 'good'))
         # print(model.most_similar('shock'))
         # print(model.wv.similarity('excellent', 'great'))
-        res = model.wv.most_similar_cosmul(positive=['woman', 'prince'], negative=['man'])
-        print("{}: {:.4f}".format(*res[0]))
+        pos = ['king', 'house']
+        neg = []
+        res1 = model.wv.most_similar_cosmul(positive=pos, negative=neg)
+        res2 = model.wv.most_similar(positive=pos, negative=neg)
+        print("%s: %.4f\n%s: %.4f" % (*res1[0], *res2[0]))
     else:
         if local:
             sentences = TextGenerator(path_to_data, limit=limit)
@@ -107,4 +115,4 @@ if __name__ == '__main__':
     # if not 3 <= len(sys.argv) <= 4:
     #     print('Usage: python model <path-to-data-or-model> -n <optional-file-limit>')
     #     exit(-1)
-    main(r"csv_100", load=True, save=False)
+    main(r"csv_80", load=True, save=False)
