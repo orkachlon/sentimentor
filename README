@@ -23,7 +23,7 @@ This research project attempts to change a given text's sentiment without alteri
 = TODOS =
 =========
 
-TODO either try to fit the method in link 1 to a multiclass problem, or get binary data instead
+TODO link 3
 
 =========
 = LINKS =
@@ -35,6 +35,9 @@ https://towardsdatascience.com/basic-binary-sentiment-analysis-using-nltk-c94ba1
 2. Amazon 8 million review data set:
 http://snap.stanford.edu/data/web-Movies.html
 
+3. Multiclass classification with sklearn, thank you Yuval:
+https://towardsdatascience.com/multi-class-text-classification-with-scikit-learn-12f1e60e0a9f
+
 =========
 = Notes =
 =========
@@ -44,3 +47,5 @@ vectors using the Word2Vec algorithm. This might help since, using this techniqu
 similar vectors. That makes it easier make good context of words and sentences.
 
 I might need to map whole reviews into vectors as well.
+
+Tried method in link no. 1 but it doesn't work well on multiclass, didn't try binary classification.

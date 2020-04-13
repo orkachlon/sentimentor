@@ -15,6 +15,7 @@ from statistics import mode
 from nltk.tokenize import word_tokenize
 
 MODELS_DIR = 'sentimentClassificationModels'
+NUM_MODELS = 6
 NUM_STARS = 5
 
 
@@ -35,13 +36,11 @@ class SentimentAnalyzer:
 
     @staticmethod
     def _load_classifiers():
-        classifiers = [nltk.NaiveBayesClassifier, ]
-        i = 0
-        for file in os.listdir(MODELS_DIR):
+        classifiers = np.empty(NUM_MODELS, dtype=np.object)
+        for i, file in enumerate(os.listdir(MODELS_DIR)):
             if os.path.isfile(file):
                 with open(f"{MODELS_DIR}/{file}", "rb") as f:
                     classifiers[i] = pickle.load(f)
-                i += 1
         return VoteClassifier(*tuple(classifiers))
 
     def find_features(self, document):
@@ -105,7 +104,13 @@ class SentimentAnalyzer:
                 SentimentAnalyzer._pickle(self.__word_features,
                                           f"pickledData/word_features{int(SentimentAnalyzer._NUM_FEATURES / 1000)}k.pickle")
 
-        feature_sets = [(self.find_features(rev), category) for (rev, category) in documents]
+        if os.path.exists("pickledData/feature_sets5k.pickle"):
+            feature_sets = [self._load_pickled(f"pickledData/feature_sets/feature_sets5k_{i + 1}.pickle") for i in range(25000)]
+        else:
+            feature_sets = [(self.find_features(rev), category) for (rev, category) in documents[: 25000]]
+            for i, feat in enumerate(feature_sets):
+                self._pickle(feat, f"pickledData/feature_sets/feature_sets5k_{i + 1}.pickle")
+
         random.shuffle(feature_sets)
         sep = int(len(feature_sets) * .75)
         return feature_sets[: sep], feature_sets[sep:]
@@ -126,39 +131,57 @@ class SentimentAnalyzer:
     def _train_classifiers(self, data_dir, file_num):
         training_set, testing_set = self._get_training_data(data_dir, file_num)
 
-        naive_bayes = nltk.NaiveBayesClassifier.train(training_set)
+        if os.path.exists(f"sentimentClassificationModels/naive_bayes5k.pickle"):
+            naive_bayes = self._load_pickled(f"sentimentClassificationModels/naive_bayes5k.pickle")
+        else:
+            naive_bayes = nltk.NaiveBayesClassifier.train(training_set)
+            SentimentAnalyzer._save_classifier(naive_bayes, "naive_bayes5k")
         print("Original Naive Bayes Algo accuracy percent:",
               (nltk.classify.accuracy(naive_bayes, testing_set)) * 100)
         naive_bayes.show_most_informative_features(15)
-        SentimentAnalyzer._save_classifier(naive_bayes, "naive_bayes5k")
 
-        mnb_classifier = SklearnClassifier(MultinomialNB())
-        mnb_classifier.train(training_set)
+        if os.path.exists(f"sentimentClassificationModels/mnb_classifier5k.pickle"):
+            mnb_classifier = self._load_pickled(f"sentimentClassificationModels/mnb_classifier5k.pickle")
+        else:
+            mnb_classifier = SklearnClassifier(MultinomialNB())
+            mnb_classifier.train(training_set)
+            SentimentAnalyzer._save_classifier(mnb_classifier, "mnb_classifier5k")
         print("MNB_classifier accuracy percent:", (nltk.classify.accuracy(mnb_classifier, testing_set)) * 100)
-        SentimentAnalyzer._save_classifier(mnb_classifier, "mnb_classifier5k")
 
-        bernoulliNB_classifier = SklearnClassifier(BernoulliNB())
-        bernoulliNB_classifier.train(training_set)
+        if os.path.exists(f"sentimentClassificationModels/bernoulliNB_classifier5k.pickle"):
+            bernoulliNB_classifier = self._load_pickled(f"sentimentClassificationModels/bernoulliNB_classifier5k.pickle")
+        else:
+            bernoulliNB_classifier = SklearnClassifier(BernoulliNB())
+            bernoulliNB_classifier.train(training_set)
+            SentimentAnalyzer._save_classifier(bernoulliNB_classifier, "bernoulliNB_classifier5k")
         print("BernoulliNB_classifier accuracy percent:",
               (nltk.classify.accuracy(bernoulliNB_classifier, testing_set)) * 100)
-        SentimentAnalyzer._save_classifier(bernoulliNB_classifier, "bernoulliNB_classifier5k")
 
-        logistic_regression_classifier = SklearnClassifier(LogisticRegression())
-        logistic_regression_classifier.train(training_set)
+        if os.path.exists(f"sentimentClassificationModels/logistic_regression_classifier5k.pickle"):
+            logistic_regression_classifier = self._load_pickled(f"sentimentClassificationModels/logistic_regression_classifier5k.pickle")
+        else:
+            logistic_regression_classifier = SklearnClassifier(LogisticRegression())
+            logistic_regression_classifier.train(training_set)
+            SentimentAnalyzer._save_classifier(logistic_regression_classifier, "logistic_regression_classifier5k")
         print("LogisticRegression_classifier accuracy percent:",
               (nltk.classify.accuracy(logistic_regression_classifier, testing_set)) * 100)
-        SentimentAnalyzer._save_classifier(logistic_regression_classifier, "logistic_regression_classifier5k")
 
-        linearSVC_classifier = SklearnClassifier(LinearSVC())
-        linearSVC_classifier.train(training_set)
+        if os.path.exists(f"sentimentClassificationModels/linearSVC_classifier5k.pickle"):
+            linearSVC_classifier = self._load_pickled(f"sentimentClassificationModels/linearSVC_classifier5k.pickle")
+        else:
+            linearSVC_classifier = SklearnClassifier(LinearSVC())
+            linearSVC_classifier.train(training_set)
+            SentimentAnalyzer._save_classifier(linearSVC_classifier, "linearSVC_classifier5k")
         print("LinearSVC_classifier accuracy percent:",
               (nltk.classify.accuracy(linearSVC_classifier, testing_set)) * 100)
-        SentimentAnalyzer._save_classifier(linearSVC_classifier, "linearSVC_classifier5k")
 
-        sgdc_classifier = SklearnClassifier(SGDClassifier())
-        sgdc_classifier.train(training_set)
+        if os.path.exists(f"sentimentClassificationModels/sgdc_classifier5k.pickle"):
+            sgdc_classifier = self._load_pickled(f"sentimentClassificationModels/sgdc_classifier5k.pickle")
+        else:
+            sgdc_classifier = SklearnClassifier(SGDClassifier())
+            sgdc_classifier.train(training_set)
+            SentimentAnalyzer._save_classifier(sgdc_classifier, "sgdc_classifier5k")
         print("SGDClassifier accuracy percent:", nltk.classify.accuracy(sgdc_classifier, testing_set) * 100)
-        SentimentAnalyzer._save_classifier(sgdc_classifier, "sgdc_classifier5k")
 
         self.__voted_classifier = VoteClassifier(naive_bayes, mnb_classifier, bernoulliNB_classifier,
                                                  logistic_regression_classifier, linearSVC_classifier,
@@ -197,7 +220,5 @@ if __name__ == '__main__':
         f.readline()
         text = f.readline()
         f.close()
-    start = time.time()
     classification, confidence = sent.sentiment(text)
-    print(f"prediction time: {(time.time() - start):.2f} s")
     print(f"Classification: {classification}\nConfidence: {confidence}")
