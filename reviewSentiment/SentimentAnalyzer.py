@@ -1,18 +1,25 @@
 import os
 import nltk
 import random
-import time
+import pickle
 import pandas as pd
 import numpy as np
+from sklearn.utils import resample
+from matplotlib import pyplot as plt
 # from nltk.corpus import movie_reviews
+from sklearn.feature_selection import chi2
+from sklearn.metrics import accuracy_score
+from sklearn.preprocessing import StandardScaler
 from nltk.classify.scikitlearn import SklearnClassifier
-import pickle
 from sklearn.naive_bayes import MultinomialNB, BernoulliNB
 from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.svm import SVC, LinearSVC, NuSVC
 from nltk.classify import ClassifierI
 from statistics import mode
 from nltk.tokenize import word_tokenize
+
+from textVectorization.text_vectorization import T2v, W2v, D2v, FT
+from ReviewGenerator import ReviewGenerator
 
 MODELS_DIR = 'sentimentClassificationModels'
 NUM_MODELS = 6
@@ -214,11 +221,104 @@ class VoteClassifier(ClassifierI):
         pass
 
 
+def log_classifier(classifier, X_true, y_true, name=None):
+    y_pred = classifier.predict(X_true)
+    if name is not None:
+        print(f"{name} details:")
+    print(f"accuracy: {accuracy_score(y_true, y_pred)}")
+    print(f"predicted classes: {np.unique(y_pred)}")
+
+
+def balance(df, size, log=True):
+    dfs = []
+    for i in range(5):
+        if df[df.score == i + 1].shape[0] != size:
+            dfs.append(resample(df[df.score == i + 1], replace=True, n_samples=size, random_state=123))
+        else:
+            dfs.append(df[df.score == i + 1])
+    combined = pd.concat(dfs)
+    if log:
+        print(f"balance:\n{combined.score.value_counts()}")
+    return combined
+
+
+def plot_data_balance(df):
+    fig = plt.figure(figsize=(8, 6))
+    df.groupby('score').text.count().plot.bar(ylim=0)
+    plt.show()
+
+
+def split_data(df, vectorizer, train=False):
+    sep = int(df.shape[0] * .75)
+    X_train = vectorizer.train(df.text[: sep]) if train else vectorizer.transform(df.text[: sep])
+    X_test = vectorizer.transform(df.text[sep:])
+    y_train, y_test = df.score[: sep], df.score[sep:]
+    return X_train, y_train, X_test, y_test
+
+
 if __name__ == '__main__':
-    sent = SentimentAnalyzer(file_num=1)
-    with open("../reviewsByStarRating/movie_reviews_2_score5.csv", 'r') as f:
-        f.readline()
-        text = f.readline()
-        f.close()
-    classification, confidence = sent.sentiment(text)
-    print(f"Classification: {classification}\nConfidence: {confidence}")
+    # sample balanced data
+    gens = [ReviewGenerator(f"../reviewsByStarRating/movie_reviews_{j}_score{i}.csv", 10000) for j in [1, 2] for i in range(1, 6)]
+    dfs = []
+    for i in range(10):
+        tmp_df = pd.DataFrame(gens[i], columns=['text'])
+        tmp_df.insert(0, 'score', np.ones_like(tmp_df.shape[0]) * ((i % 5) + 1), True)
+        dfs.append(tmp_df)
+    df = pd.concat(dfs)
+    df = df.sample(frac=1)
+    # print(df.groupby('score').count())
+
+    # default Logistic regression without taking data imbalance into account
+    # scaler = StandardScaler()
+    # vectorizer = T2v()
+    # X_train, y_train, X_test, y_test = split_data(df, vectorizer)
+    # X_train = scaler.fit_transform(X_train, y_train)
+    # scaler.transform(X_test, False)
+    # logreg = LogisticRegression(max_iter=5000).fit(X_train, y_train)
+    # log_classifier(logreg, X_test, y_test, "default logistic regression")
+
+    # =========== SOLUTIONS ===========
+
+    # 1. Upsample minorities
+
+    # upsampled_df = balance(df, np.max(df.score.value_counts()))
+    # scaler = StandardScaler()
+    # vectorizer = T2v()
+    # X_train, y_train, X_test, y_test = split_data(upsampled_df, vectorizer)
+    # X_train = scaler.fit_transform(X_train, y_train)
+    # scaler.transform(X_test, False)
+    # up_sampled_logreg = LogisticRegression(max_iter=5000).fit(X_train, y_train)
+    # log_classifier(up_sampled_logreg, X_test, y_test, "Upsampled logistic regression")
+
+    # 2. Downsample majorities
+    # downsampled_df = balance(df, np.min(df.score.value_counts()))
+    # scaler = StandardScaler()
+    # vectorizer = T2v()
+    # X_train, y_train, X_test, y_test = split_data(downsampled_df, vectorizer)
+    # X_train = scaler.fit_transform(X_train, y_train)
+    # scaler.transform(X_test, False)
+    # down_sampled_logreg = LogisticRegression(max_iter=5000).fit(X_train, y_train)
+    # log_classifier(down_sampled_logreg, X_test, y_test, "Downsampled logistic regression")
+
+    # ====== Vectorizer performance ======
+    # vectorizer = W2v("../textVectorizationModels/text8.model", load=True, local=True)
+    # vectorizer = T2v()
+    # X_train, y_train, X_test, y_test = split_data(df, vectorizer, train=True)
+    # feature_names = np.array(vectorizer.get_feature_names())
+    # print(len(feature_names))  # == vector size
+    # for s in sorted(np.unique(y_train)):
+    #     print(f"# {s}")
+    #     # group by reviews with score == i
+    #     response = np.nonzero(np.array(y_train == s))[0]
+    #     # calculate feature score using its mean on the test/train set - make sure to match the y
+    #     scores = np.mean(X_train[response], axis=0)
+    #     # sort by the scores in descending order
+    #     sorting = np.argsort(scores)[::-1]
+    #     # get top n unigrams and bigrams
+    #     n = 10
+    #     uni_top = [feature_names[i] for i in sorting if len(feature_names[i].split(' ')) == 1][: n]
+    #     bi_top = [feature_names[i] for i in sorting if len(feature_names[i].split(' ')) == 2][: n]
+    #     print("top uni: {}".format(uni_top))
+    #     print("top bi: {}".format(bi_top))
+    #     # check for bigrams since im not getting any rn
+    # print([feat for feat in feature_names if len(feat.split(' ')) == 2])

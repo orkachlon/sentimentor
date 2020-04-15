@@ -5,13 +5,19 @@ First project in the course 'Machine learning as a tool for interactive products
 = Files =
 =========
 
-textVectorization/model.py: Word2Vec model creator
+ReviewGenerator.py: a generator for reviews and their scores
+
+textVectorization/text_vectorization.py: library containing a couple of different text vectorizers
     dependencies: gensim
     recommended: cython - needed for faster training speed
+
 textVectorization/RakeExtractor.py: An attempt at the RAKE algorithm using nltk
-    dependencies
+
 dataParsing/data_organizer.py: An organizer for the 8mil reviews file
     dependencies: FileData, Parser
+
+reviewSentiment.SentimentAnalyzer: a place to try out sentiment analysis using the different vectorization
+                                   models
 
 ===============
 = Description =
@@ -23,7 +29,11 @@ This research project attempts to change a given text's sentiment without alteri
 = TODOS =
 =========
 
-TODO link 3
+TODO try to vectorize whole reviews by weighted average of tf-idf score * w2v vector - link 4
+TODO consider making ReviewGenerator generate balanced data instead of managing it from the outside
+TODO try SVM or tree-based alg in link 5
+TODO think again about using adjectives only
+TODO might need to reorganize the data from the original file
 
 =========
 = LINKS =
@@ -38,6 +48,12 @@ http://snap.stanford.edu/data/web-Movies.html
 3. Multiclass classification with sklearn, thank you Yuval:
 https://towardsdatascience.com/multi-class-text-classification-with-scikit-learn-12f1e60e0a9f
 
+4. Ways to vectorize document given a word vectorizer:
+https://stackoverflow.com/questions/29760935/how-to-get-vector-for-a-sentence-from-the-word2vec-of-tokens-in-sentence
+
+5. Dealing with imbalanced data:
+https://elitedatascience.com/imbalanced-classes
+
 =========
 = Notes =
 =========
@@ -49,3 +65,4 @@ similar vectors. That makes it easier make good context of words and sentences.
 I might need to map whole reviews into vectors as well.
 
 Tried method in link no. 1 but it doesn't work well on multiclass, didn't try binary classification.
+tfidf vectorizer kinda works, might need to use it in combination with w2v
