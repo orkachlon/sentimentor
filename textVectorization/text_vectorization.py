@@ -1,6 +1,7 @@
 import os
 # import sys
 import random
+import pickle
 import pandas as pd
 import gensim.downloader as api
 from gensim.models.word2vec import Word2Vec
@@ -58,10 +59,13 @@ class W2v(Vectorizer):
 
 class T2v(Vectorizer):
 
-    def __init__(self, how='tfidf'):
-        if how == 'tfidf':
+    def __init__(self, how='tfidf', load=False, name=''):
+        if load:
+            self.vec = None
+            self.load(name)
+        elif how == 'tfidf':
             self.vec = TfidfVectorizer(**{'sublinear_tf': True, 'norm': 'l2', 'encoding': 'latin-1',
-                                       'ngram_range': (1, 2), 'stop_words': 'english', 'min_df': .03, 'max_df': .2})
+                                       'ngram_range': (1, 2), 'stop_words': 'english', 'min_df': .04, 'max_df': .2})
         elif how == 'count':
             self.vec = CountVectorizer(**{'encoding': 'latin-1', 'ngram_range': (1, 2),
                                           'stop_words': 'english', 'min_df': .07, 'max_df': .2})
@@ -79,6 +83,16 @@ class T2v(Vectorizer):
 
     def get_feature_names(self):
         return self.vec.get_feature_names()
+
+    def save(self, name):
+        with open(os.path.join("../textVectorizationModels", name), 'wb') as f:
+            pickle.dump(self.vec, f)
+            f.close()
+
+    def load(self, name):
+        with open(os.path.join("../textVectorizationModels", name), 'rb') as f:
+            self.vec = pickle.load(f)
+            f.close()
 
 
 class D2v(Vectorizer):

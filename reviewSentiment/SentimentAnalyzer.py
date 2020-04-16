@@ -221,6 +221,24 @@ class VoteClassifier(ClassifierI):
         pass
 
 
+def try_resampled_data(df: pd.DataFrame, resample_target: int, test_model=True):
+    # resample data
+    resampled_df = balance(df, resample_target)
+    # train vectorizer on training data
+    vectorizer = T2v()
+    X_train, y_train, X_test, y_test = split_data(resampled_df, vectorizer, train=True)
+    # train scaler on training data and transform it and the test data
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X_train, y_train)
+    scaler.transform(X_test, False)
+    # train logistic regression model on training data
+    resampled_logreg = LogisticRegression(max_iter=5000).fit(X_train, y_train)
+    # test the model on test data
+    if test_model:
+        log_classifier(resampled_logreg, X_test, y_test, f"Resampled to {resample_target} logistic regression")
+    return resampled_logreg
+
+
 def log_classifier(classifier, X_true, y_true, name=None):
     y_pred = classifier.predict(X_true)
     if name is not None:
@@ -229,9 +247,9 @@ def log_classifier(classifier, X_true, y_true, name=None):
     print(f"predicted classes: {np.unique(y_pred)}")
 
 
-def balance(df, size, log=True):
+def balance(df: pd.DataFrame, size: int, log=True):
     dfs = []
-    for i in range(5):
+    for i in range(NUM_STARS):
         if df[df.score == i + 1].shape[0] != size:
             dfs.append(resample(df[df.score == i + 1], replace=True, n_samples=size, random_state=123))
         else:
@@ -258,12 +276,14 @@ def split_data(df, vectorizer, train=False):
 
 if __name__ == '__main__':
     # sample balanced data
-    gens = [ReviewGenerator(f"../reviewsByStarRating/movie_reviews_{j}_score{i}.csv", 10000) for j in [1, 2] for i in range(1, 6)]
+    gens = [ReviewGenerator(f"../reviewsByStarRating/movie_reviews_{j}_score{i}.csv", limit=5000)
+            for j in [1] for i in range(1, 6)]
     dfs = []
-    for i in range(10):
+    for i in range(len(gens)):
         tmp_df = pd.DataFrame(gens[i], columns=['text'])
         tmp_df.insert(0, 'score', np.ones_like(tmp_df.shape[0]) * ((i % 5) + 1), True)
         dfs.append(tmp_df)
+        # dfs.append(pd.DataFrame(gens[i], columns=['text']))
     df = pd.concat(dfs)
     df = df.sample(frac=1)
     # print(df.groupby('score').count())
@@ -280,25 +300,12 @@ if __name__ == '__main__':
     # =========== SOLUTIONS ===========
 
     # 1. Upsample minorities
-
-    # upsampled_df = balance(df, np.max(df.score.value_counts()))
-    # scaler = StandardScaler()
-    # vectorizer = T2v()
-    # X_train, y_train, X_test, y_test = split_data(upsampled_df, vectorizer)
-    # X_train = scaler.fit_transform(X_train, y_train)
-    # scaler.transform(X_test, False)
-    # up_sampled_logreg = LogisticRegression(max_iter=5000).fit(X_train, y_train)
-    # log_classifier(up_sampled_logreg, X_test, y_test, "Upsampled logistic regression")
+    # upsampled_logreg = try_resampled_data(df, np.max(df.score.value_counts()))
 
     # 2. Downsample majorities
-    # downsampled_df = balance(df, np.min(df.score.value_counts()))
-    # scaler = StandardScaler()
-    # vectorizer = T2v()
-    # X_train, y_train, X_test, y_test = split_data(downsampled_df, vectorizer)
-    # X_train = scaler.fit_transform(X_train, y_train)
-    # scaler.transform(X_test, False)
-    # down_sampled_logreg = LogisticRegression(max_iter=5000).fit(X_train, y_train)
-    # log_classifier(down_sampled_logreg, X_test, y_test, "Downsampled logistic regression")
+    # downsampled_logreg = try_resampled_data(df, np.min(df.score.value_counts()))
+
+    # 3.
 
     # ====== Vectorizer performance ======
     # vectorizer = W2v("../textVectorizationModels/text8.model", load=True, local=True)
@@ -320,5 +327,5 @@ if __name__ == '__main__':
     #     bi_top = [feature_names[i] for i in sorting if len(feature_names[i].split(' ')) == 2][: n]
     #     print("top uni: {}".format(uni_top))
     #     print("top bi: {}".format(bi_top))
-    #     # check for bigrams since im not getting any rn
+    #     # print all bigram features
     # print([feat for feat in feature_names if len(feat.split(' ')) == 2])
