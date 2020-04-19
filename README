@@ -30,10 +30,7 @@ This research project attempts to change a given text's sentiment without alteri
 =========
 
 TODO try to vectorize whole reviews by weighted average of tf-idf score * w2v vector - link 4
-TODO consider making ReviewGenerator generate balanced data instead of managing it from the outside
-TODO try SVM or tree-based alg in link 5
 TODO think again about using adjectives only
-TODO might need to reorganize the data from the original file
 
 =========
 = LINKS =
@@ -66,3 +63,7 @@ I might need to map whole reviews into vectors as well.
 
 Tried method in link no. 1 but it doesn't work well on multiclass, didn't try binary classification.
 tfidf vectorizer kinda works, might need to use it in combination with w2v
+
+tried 2 more methods for dealing with imbalanced data from link 5, best accuracy i got so far is 50%
+
+if i want to rid the text of spelling mistakes and stopwords im going to need a lot more processing power

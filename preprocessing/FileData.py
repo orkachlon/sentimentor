@@ -1,5 +1,5 @@
-from gensim import utils
 import csv
+from collections import deque
 
 
 class FileData:
@@ -16,18 +16,19 @@ class FileData:
         :param encoding:    (optional) if a path is given then its encoding should be specified.
                             Default is 'utf-8'.
         """
-        self.__reviews = []
+        self.__reviews = deque()
         self.__parser = parser
         if max_reviews <= 0:
             return
         if path is not None and encoding is not None:
             self.__encoding = encoding
-            self.__read_from_file(path, max_reviews)
+            self.__from_csv(path, max_reviews)
         elif parser is not None:
-            i = 0
-            while parser.can_parse() and i < max_reviews:
-                self.__reviews.append(parser.next_review())
-                i += 1
+            self.__reviews = [rev for i, rev in enumerate(parser) if i < max_reviews]
+            # i = 0
+            # while parser.can_parse() and i < max_reviews:
+            #     self.__reviews.append(parser.next_review())
+            #     i += 1
 
     def __repr__(self):
         """
@@ -38,7 +39,7 @@ class FileData:
     def __iter__(self):
         return iter(self.__reviews)
 
-    def __read_from_file(self, path, limit, encoding='utf-8'):
+    def __from_csv(self, path, limit, encoding='utf-8'):
         """
         Reads the reviews from a csv file
         :param path: path to reviews file
@@ -70,11 +71,15 @@ class FileData:
         encoding = self.__parser.get_encoding() if self.__parser is not None else self.__encoding
         if format == 'csv':  # CSV format
             with open(filename, 'w', encoding=encoding) as f:
-                f.write('score,text\n')
+                f.write('"score","text"\n')
                 f.writelines([f"{str(review)}\n" for review in self.__reviews])
         if format == 'ls':  # LineSentence format
             with open(filename, 'w', encoding=encoding) as f:
-                f.writelines([review.get_text() for review in self.__reviews])
+                f.writelines([review.text for review in self.__reviews])
+
+    def clean_text(self, cleaner):
+        for i in range(len(self.__reviews)):
+            self.__reviews[i].text = cleaner(self.__reviews[i].text)
 
 
 class ReviewData:
@@ -82,35 +87,23 @@ class ReviewData:
     Holds information of a review
     """
 
-    def __init__(self, score: float, text: str):
+    def __init__(self, score: float, text):
         """
         Initializes the review with a score and its text
-        :param score: 1-5 (float)
-        :param text: review (str)
+        :param score: 1-5 (float/int)
+        :param text: review (str/bytes)
         """
-        self.__score = score
-        self.__text = ' '.join(utils.simple_preprocess(text)).replace('"', r'\"') + '\n'
+        self.score = score
+        self.text = text
 
     def __repr__(self):
         """
         :return: Readable representation of this review
         """
-        return f'score: {self.__score}\ntext: "{self.__text}"\n'
+        return f'score: {self.score}\ntext: "{self.text}"\n'
 
     def __str__(self):
         """
         :return: String representation of this review. Format is CSV.
         """
-        return f'{self.__score},"{self.__text}"'
-
-    def get_score(self):
-        """
-        :return: Review score
-        """
-        return self.__score
-
-    def get_text(self):
-        """
-        :return: Review text
-        """
-        return self.__text
+        return f'{self.score},"{self.text.decode("utf-8", "ignore")}"'
