@@ -2,25 +2,26 @@ import os
 import nltk
 import random
 import pickle
-import pandas as pd
 import numpy as np
+import pandas as pd
+import seaborn as sns
+
 from statistics import mode
-from sklearn.utils import resample
 from matplotlib import pyplot as plt
 from nltk.classify import ClassifierI
-# from nltk.corpus import movie_reviews
 from nltk.tokenize import word_tokenize
-from sklearn.metrics import accuracy_score
-from sklearn.feature_selection import chi2
-from sklearn.svm import SVC, LinearSVC, NuSVC
-from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestClassifier
 from nltk.classify.scikitlearn import SklearnClassifier
+from sklearn.svm import SVC, LinearSVC
+from sklearn.utils import resample
+from sklearn.metrics import accuracy_score
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import MultinomialNB, BernoulliNB
 from sklearn.linear_model import LogisticRegression, SGDClassifier
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import cross_val_score
 
-from textVectorization.text_vectorization import T2v, W2v, D2v, FT
-from ReviewGenerator import ReviewGenerator, BalancedReviewGenerator, clean_review_generator
+from dev.textVectorization.text_vectorization import T2v
+from dev.ReviewGenerator import BalancedReviewGenerator
 
 MODELS_DIR = 'sentimentClassificationModels'
 NUM_MODELS = 6
@@ -157,7 +158,8 @@ class SentimentAnalyzer:
         print("MNB_classifier accuracy percent:", (nltk.classify.accuracy(mnb_classifier, testing_set)) * 100)
 
         if os.path.exists(f"sentimentClassificationModels/bernoulliNB_classifier5k.pickle"):
-            bernoulliNB_classifier = self._load_pickled(f"sentimentClassificationModels/bernoulliNB_classifier5k.pickle")
+            bernoulliNB_classifier = self._load_pickled(
+                f"sentimentClassificationModels/bernoulliNB_classifier5k.pickle")
         else:
             bernoulliNB_classifier = SklearnClassifier(BernoulliNB())
             bernoulliNB_classifier.train(training_set)
@@ -166,7 +168,8 @@ class SentimentAnalyzer:
               (nltk.classify.accuracy(bernoulliNB_classifier, testing_set)) * 100)
 
         if os.path.exists(f"sentimentClassificationModels/logistic_regression_classifier5k.pickle"):
-            logistic_regression_classifier = self._load_pickled(f"sentimentClassificationModels/logistic_regression_classifier5k.pickle")
+            logistic_regression_classifier = self._load_pickled(
+                f"sentimentClassificationModels/logistic_regression_classifier5k.pickle")
         else:
             logistic_regression_classifier = SklearnClassifier(LogisticRegression())
             logistic_regression_classifier.train(training_set)
@@ -175,7 +178,8 @@ class SentimentAnalyzer:
               (nltk.classify.accuracy(logistic_regression_classifier, testing_set)) * 100)
 
         if os.path.exists(f"sentimentClassificationModels/linearSVC_classifier5k.pickle"):
-            linearSVC_classifier = self._load_pickled(f"sentimentClassificationModels/linearSVC_classifier5k.pickle")
+            linearSVC_classifier = self._load_pickled(
+                f"sentimentClassificationModels/linearSVC_classifier5k.pickle")
         else:
             linearSVC_classifier = SklearnClassifier(LinearSVC())
             linearSVC_classifier.train(training_set)
@@ -227,7 +231,7 @@ def try_resampled_data(df: pd.DataFrame, resample_target: int, test_model=True):
     resampled_df = balance(df, resample_target)
     # train vectorizer on training data
     vectorizer = T2v()
-    X_train, y_train, X_test, y_test = split_data(resampled_df)
+    X_train, y_train, X_test, y_test = split_data(resampled_df, .75)
     X_train = vectorizer.train(X_train)
     X_test = vectorizer.transform(X_test)
     # train scaler on training data and transform it and the test data
@@ -242,11 +246,15 @@ def try_resampled_data(df: pd.DataFrame, resample_target: int, test_model=True):
     return resampled_logreg
 
 
-def try_penalized_svm(df, test_model=True):
+def try_penalized_svm(df, scale=True, test_model=True):
     vectorizer = T2v()
-    X_train, y_train, X_test, y_test = split_data(df)
+    X_train, y_train, X_test, y_test = split_data(df, .75)
     X_train = vectorizer.train(X_train)
     X_test = vectorizer.transform(X_test)
+    if scale:
+        scaler = StandardScaler()
+        X_train = scaler.fit_transform(X_train, y_train)
+        scaler.transform(X_test)
     svm = SVC(kernel='linear', class_weight='balanced', probability=True)
     svm.fit(X_train, y_train)
     if test_model:
@@ -254,17 +262,56 @@ def try_penalized_svm(df, test_model=True):
     return svm
 
 
-def try_random_forest(df, test_model=True):
+def try_random_forest(df, scale=True, test_model=True):
     vectorizer = T2v()
     X_train, y_train, X_test, y_test = split_data(df, .75)
     vectorizer.train(df.text)
     X_train = vectorizer.transform(X_train)
     X_test = vectorizer.transform(X_test)
-    classifier = RandomForestClassifier()
+    if scale:
+        scaler = StandardScaler()
+        X_train = scaler.fit_transform(X_train, y_train)
+        scaler.transform(X_test, False)
+    classifier = RandomForestClassifier(n_estimators=200, max_depth=3, random_state=0)
     classifier.fit(X_train, y_train)
     if test_model:
         log_classifier(classifier, X_test, y_test, 'RandomForestClassifier')
     return classifier
+
+
+def model_selection(df, vec):
+    X = df.text
+    y = df.score
+    X = vec.train(X)
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X, y)
+    models_with_scaling = [
+        SVC(kernel='linear'),
+        LogisticRegression(random_state=0, max_iter=1000)
+    ]
+    models_without_scaling = [
+        # RandomForestClassifier(n_estimators=200, max_depth=3, random_state=0),
+        # MultinomialNB()
+    ]
+    CV = 5
+    cv_df = pd.DataFrame(index=range(CV * (len(models_with_scaling) + len(models_without_scaling))))
+    entries = []
+    for model in models_with_scaling:
+        model_name = model.__class__.__name__
+        accuracies = cross_val_score(model, X_scaled, y, scoring='accuracy', cv=CV)
+        for fold_idx, accuracy, in enumerate(accuracies):
+            entries.append((model_name, fold_idx, accuracy))
+
+    for model in models_without_scaling:
+        model_name = model.__class__.__name__
+        accuracies = cross_val_score(model, X, y, scoring='accuracy', cv=CV)
+        for fold_idx, accuracy, in enumerate(accuracies):
+            entries.append((model_name, fold_idx, accuracy))
+
+    cv_df = pd.DataFrame(entries, columns=['model_name', 'fold_idx', 'accuracy'])
+    sns.boxplot(x='model_name', y='accuracy', data=cv_df)
+    sns.stripplot(x='model_name', y='accuracy', data=cv_df, size=8, jitter=True, edgecolor='gray', linewidth=2)
+    plt.show()
 
 
 def log_classifier(classifier, X_true, y_true, name=None):
@@ -300,13 +347,13 @@ def split_data(df, ratio: float, log=True):
     X_test = df.text[sep:]
     y_train, y_test = df.score[: sep], df.score[sep:]
     if log:
-        print(f"split:\ntrain: {len(X_train)}\ntest: {len(X_test)}")
+        print(f"=== split ===\ntrain: {len(X_train)}\ntest: {len(X_test)}")
     return X_train, y_train, X_test, y_test
 
 
 if __name__ == '__main__':
     # sample balanced data
-    df = pd.concat([pd.DataFrame(BalancedReviewGenerator(f"movies_{i}", 20000, True)) for i in range(1, 21)])
+    df = pd.concat([pd.DataFrame(BalancedReviewGenerator(f"movies_{i}", 1000, True)) for i in range(1, 6)])
     print(f"balance:\n{df.groupby('score').count()}")
 
     # default Logistic regression without taking data imbalance into account
@@ -330,4 +377,10 @@ if __name__ == '__main__':
     # try_penalized_svm(df)
 
     # 4. Tree based algorithm
-    try_random_forest(df)
+    # try_random_forest(df)
+
+    # ===========================
+    # = classifiers from link 3 =
+    # ===========================
+
+    model_selection(df, T2v('count'))

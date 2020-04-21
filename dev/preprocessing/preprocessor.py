@@ -6,8 +6,8 @@ from nltk import pos_tag
 from string import punctuation
 from nltk.corpus import stopwords
 from spellchecker import SpellChecker
-from preprocessing.Parser import LargeFileParser
-from preprocessing.FileData import *
+from dev.preprocessing.Parser import LargeFileParser
+from dev.preprocessing.FileData import *
 
 LARGE_INPUT_FILE = '../ml-dataset/movies.txt'
 LARGE_INPUT_FILE_ENCODING = 'iso-8859-1'
@@ -37,16 +37,18 @@ def parse_file(path, step_size=STEP_SIZE, encoding=LARGE_INPUT_FILE_ENCODING, cl
         file_n = 0
 
     # remaining = length
+    print("Reading input file...")
     parser = LargeFileParser(path, encoding)
     remaining = len(parser)
     base_name = os.path.basename(path).split('.')[0]
 
     prev = 0
     while remaining > 0:
+        print(f"{(len(parser) - remaining) / len(parser) * 100:.0f}%")
         increment = step_size if remaining > step_size else remaining
-        with open(f"../csv/{base_name}_{file_n}.csv", 'w') as f:
+        with open(f"../dev/csv/{base_name}_{file_n}.csv", 'w') as f:
             f.write('"score","text"\n')
-            f.writelines(['%d,"%s"\n' % (score, cleaner(rev)) for score, rev in zip(*parser[prev: prev + increment])])
+            f.write('\n'.join(['%d,"%s"' % (score, cleaner(rev)) for score, rev in zip(*parser[prev: prev + increment])]))
         prev += increment
         remaining -= increment
         file_n += 1
@@ -103,51 +105,26 @@ def sort_by_rating(src, dst):
                                                             **PD_TO_CSV_KWARGS)
 
 
-def is_numeric(s):
-    try:
-        float(s) if '.' in s else int(s)
-        return True
-    except ValueError:
-        return False
-
-
-def count_wrapper(func):
-    def wrapper(*args, **kwargs):
-        ret_val = func(*args, **kwargs)
-        if ret_val is False:
-            wrapper.filtered += 1
-            print(wrapper.filtered)
-        return ret_val
-
-    wrapper.filtered = 0
-    return wrapper
-
-
-@count_wrapper
-def contains_adj(s):
-    adjectives = ['JJ']
-    pos = pos_tag(s)
-    for w in pos:
-        if w[1] in adjectives:
-            return True
-    return False
-
-
 def get_text_cleaner(stop=True, punct=True, num=True, html=True, spell=True, unrecognized=True):
     punct_cleaner = re.compile(br"[" + re.escape(punctuation).encode('cp1252', 'ignore') + br"]")
     html_cleaner = re.compile(rb'<.*?>|&([a-z0-9]+|#[0-9]{1,6}|#x[0-9a-f]{1,6});')
     num_cleaner = re.compile(rb'([0-9](\.[0-9]*)?)+')
+    stopwords_set = stopwords.words('english')
+    stopwords_set += ['special effects', 'dvd', 'ive seen', 'quot', 'amp']
+    stopwords_set += [w.replace(r"'", "") for w in stopwords_set if "'" in w]
+    stopwords_set = set(stopwords_set)
+    stopwrds_cleaner = re.compile(br'(?<= )(' + '|'.join(stopwords_set).encode('cp1252', 'ignore') + br')(?= )')
 
     def text_cleaner(s: bytes):
         if unrecognized:
-            s = s.decode('cp1252', 'ignore').encode('cp1252', 'ignore')
+            s = s.decode('cp1252', 'ignore').lower().encode('cp1252', 'ignore')
         if html:
             s = html_cleaner.sub(b'', s)
         if punct:
             # method 1:
-            # s = re.sub(rb"['`\".:?!@#$%^&*()\-=+_~/<>,|\[\]]", rb'', s)
+            # s = re.sub(rb"['`\".:;?!@#$%^&*(){}\-=+_~/<>,\\|\[\]]", rb'', s)
             # method 2:
-            s = punct_cleaner.sub(br'', s)
+            s = punct_cleaner.sub(br' ', s)
             # method 3:
             # words = nltk.word_tokenize(s.decode(LARGE_INPUT_FILE_ENCODING))
             # s = ' '.join([w for w in words if w not in punctuation])
@@ -157,14 +134,23 @@ def get_text_cleaner(stop=True, punct=True, num=True, html=True, spell=True, unr
         if num:
             s = num_cleaner.sub(rb'', s)
         if stop:
-            try:
-                words = nltk.word_tokenize(s.decode(LARGE_INPUT_FILE_ENCODING, 'ignore'))
-            except AttributeError:
-                words = nltk.word_tokenize(s)
-            s = ' '.join([w for w in words if w not in stopwords.words()])
+            # method 1: DOES NOT WORK FOR BI-GRAMS
+            # ================
+            # try:
+            #     words = nltk.word_tokenize(s.decode('cp1252', 'ignore'))
+            # except AttributeError:
+            #     words = nltk.word_tokenize(s)
+            # s = ' '.join([w for w in words if w not in stopwords_set])
+
+            # method 2:
+            # ================
+            s = b' ' + s + b' '
+            s = stopwrds_cleaner.sub(br'', s)
+            s = re.sub(rb' +', b' ', s)
+            s = s.strip()
         if spell:
             try:
-                words = nltk.word_tokenize(s.decode(LARGE_INPUT_FILE_ENCODING, 'ignore'))
+                words = nltk.word_tokenize(s.decode('cp1252', 'ignore'))
             except AttributeError:
                 words = nltk.word_tokenize(s)
             splchkr = SpellChecker()
@@ -173,7 +159,7 @@ def get_text_cleaner(stop=True, punct=True, num=True, html=True, spell=True, unr
             s = s.decode('cp1252', 'ignore')
         except AttributeError:
             pass
-        return s.lower()
+        return s
     return text_cleaner
 
 
@@ -207,7 +193,10 @@ def clean_data(dir_path):
 
 
 def main():
-    # parse_file('../ml-dataset/movies.txt', cleaner=get_text_cleaner(stop=False, spell=False))
+    # cleaner = get_text_cleaner(**{k: k == 'stop' for k in ['stop', 'spell', 'html', 'unrecognized', 'num', 'punct']})
+    # print(cleaner(b"blabla"))
+    # print(punctuation)
+    parse_file('../ml-dataset/movies.txt', cleaner=get_text_cleaner(spell=False))
     for f in os.listdir("../csv"):
         print(f"sorting {f}...")
         sort_by_rating(os.path.join("../csv", f), "../reviewsByStarRating")

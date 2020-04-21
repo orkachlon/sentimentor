@@ -31,6 +31,9 @@ This research project attempts to change a given text's sentiment without alteri
 
 TODO try to vectorize whole reviews by weighted average of tf-idf score * w2v vector - link 4
 TODO think again about using adjectives only
+TODO in the vectorizers - if there's not enough memory to train on all the data at once then split the data
+     and train twice
+TODO try to rid the data of stopwords with regex
 
 =========
 = LINKS =

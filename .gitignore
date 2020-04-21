@@ -1,2 +1,15 @@
-ml-dataset/
+# Jetbrains folder
 .idea/
+
+# vs code folder
+__pycache__
+
+# data folders
+dev/ml-dataset/
+dev/csv/
+dev/clean_csv/
+reviewsByStarRating/
+test/
+
+# models folder
+dev/textVectorizationModels/

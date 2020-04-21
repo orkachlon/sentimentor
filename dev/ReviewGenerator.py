@@ -1,8 +1,7 @@
-import sys
 import os
 import random
 import pandas as pd
-from preprocessing.preprocessor import get_text_cleaner
+from dev.preprocessing.preprocessor import get_text_cleaner
 
 
 class ReviewGenerator:
@@ -83,8 +82,8 @@ class BalancedReviewGenerator(ReviewGenerator):
         return df if not self._shuffle else df.sample(frac=1).reset_index(drop=True)
 
 
-def clean_review_generator(generator: ReviewGenerator, mode='row', **kwargs):
-    cleaner = get_text_cleaner(**kwargs)
+def clean_review_generator(generator: ReviewGenerator, mode='row', **cleaner_kwargs):
+    cleaner = get_text_cleaner(**cleaner_kwargs)
     for row in generator:
         yield (row['score'], cleaner(row['text'])) if mode == 'row' else cleaner(row['text'])
 

@@ -3,7 +3,7 @@ import re
 import mmap
 import contextlib
 from abc import ABC, abstractmethod
-from preprocessing.FileData import ReviewData
+from dev.preprocessing.FileData import ReviewData
 
 
 class Parser(ABC):
