@@ -1,15 +1,18 @@
-# Jetbrains folder
-.idea/
+# Jetbrains folders
+.idea
 
-# vs code folder
+# vs code folders
 __pycache__
+.vscode
 
 # data folders
-dev/ml-dataset/
-dev/csv/
-dev/clean_csv/
-reviewsByStarRating/
-test/
+dev/ml-dataset
+dev/csv
+dev/clean_csv
+dev/reviewsByStarRating
+dev/test
+dev/reviewSentiment/pickledData
 
-# models folder
-dev/textVectorizationModels/
+# models folders
+dev/textVectorization/textVectorizationModels
+dev/reviewSentiment/sentimentClassificationModels

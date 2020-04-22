@@ -6,8 +6,8 @@ from dev.preprocessing.preprocessor import get_text_cleaner
 
 class ReviewGenerator:
 
-    def __init__(self, path, limit=None, shuffle=False):
-        self.__path = path
+    def __init__(self, path, limit=None, shuffle=True):
+        self._path = path
         self._limit = None if limit is None else max(limit, 0)
         self._iter_values = 'row'
         self._shuffle = shuffle
@@ -29,13 +29,13 @@ class ReviewGenerator:
 
     def __iter__(self):
         values = self._iter_values
-        if os.path.isdir(self.__path):
-            file_list = os.listdir(self.__path)
+        if os.path.isdir(self._path):
+            file_list = os.listdir(self._path)
             # shuffle files for some variance
             if self._shuffle:
                 random.shuffle(file_list)
             for file in file_list:
-                file_path = os.path.join(self.__path, file)
+                file_path = os.path.join(self._path, file)
                 if os.path.isfile(file_path):
                     df = pd.read_csv(open(file_path, 'r'), delimiter=',', quotechar='"', escapechar='\\', header=0)
                     for j, row in df.iterrows():
@@ -43,7 +43,7 @@ class ReviewGenerator:
                             return
                         yield row if values == 'row' else row['score'] if values == 'score' else row['text']
         else:
-            df = pd.read_csv(open(self.__path, 'r'), delimiter=',', quotechar='"', escapechar='\\', header=0)
+            df = pd.read_csv(open(self._path, 'r'), delimiter=',', quotechar='"', escapechar='\\', header=0)
             if self._shuffle:
                 df = df.sample(frac=1).reset_index(drop=True)
             for j, row in df.iterrows():
@@ -82,6 +82,28 @@ class BalancedReviewGenerator(ReviewGenerator):
         return df if not self._shuffle else df.sample(frac=1).reset_index(drop=True)
 
 
+class BinaryReviewGenerator(ReviewGenerator):
+    def __init__(self, path: str, lim=None, shuffle=True):
+        super(BinaryReviewGenerator, self).__init__(path, lim, shuffle)
+
+    def __iter__(self):
+        values = self._iter_values
+        df = pd.read_csv(open(self._path, 'r'), delimiter=',', quotechar='"', header=0, names=['text', 'score'], encoding='utf-8')
+        if self._shuffle:
+            df = df.sample(frac=1).reset_index(drop=True)
+        for i, row in df.iterrows():
+            if i >= self._limit:
+                break
+            yield row if values == 'row' else row['text'] if values == 'text' else row['score']
+
+    def as_df(self):
+        df = pd.read_csv(open(self._path, 'r'), delimiter=',', quotechar='"', header=0, names=['text', 'score'])
+        if self._limit:
+            df = pd.concat([df.loc[df.score == 'neg'].iloc[: int(self._limit / 2)],
+                            df.loc[df.score == 'pos'].iloc[: int(self._limit / 2)]])
+        return df if not self._shuffle else df.sample(frac=1).reset_index(drop=True)
+
+
 def clean_review_generator(generator: ReviewGenerator, mode='row', **cleaner_kwargs):
     cleaner = get_text_cleaner(**cleaner_kwargs)
     for row in generator:
@@ -89,9 +111,11 @@ def clean_review_generator(generator: ReviewGenerator, mode='row', **cleaner_kwa
 
 
 if __name__ == '__main__':
-    balanced_gen = BalancedReviewGenerator('movies_1', 300, True)
+    binary_gen = BinaryReviewGenerator("ml-dataset/bin_train.csv", 10, False)
+
+    # balanced_gen = BalancedReviewGenerator('movies_1', 300)
     i = 0
-    for row in balanced_gen:
+    for row in binary_gen:
         print(f"#{i + 1}")
         print(row)
         i += 1

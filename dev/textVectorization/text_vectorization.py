@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import gensim.downloader as api
 from abc import ABC, abstractmethod
+from nltk.corpus import stopwords as stp
 from gensim.models.word2vec import Word2Vec
 from gensim.models.fasttext import FastText
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
@@ -14,6 +15,10 @@ from dev.ReviewGenerator import ReviewGenerator, BalancedReviewGenerator
 from dev.preprocessing.preprocessor import CSV_TO_PD_KWARGS
 
 WORD_SPACE_DIM = 300
+CUSTOM_STOP_WORDS = ['really', 'watch', 'money', 'make', 'people', 'time', 'get', 'would']
+STOP_WORDS = stp.words('english') + \
+             [w.replace("'", "") for w in stp.words('english') if "'" in w] + \
+             CUSTOM_STOP_WORDS
 
 
 class Vectorizer(ABC):
@@ -97,10 +102,10 @@ class T2v(Vectorizer):
             self.load(name)
         elif how == 'tfidf':
             self.vec = TfidfVectorizer(**{'sublinear_tf': True, 'ngram_range': (1, 2),
-                                       'stop_words': 'english', 'min_df': .02, 'max_df': .3})
+                                       'stop_words': STOP_WORDS, 'min_df': .02, 'max_df': .3})
         elif how == 'count':
             self.vec = CountVectorizer(**{'ngram_range': (1, 2),
-                                          'stop_words': 'english', 'min_df': .04, 'max_df': .1})
+                                          'stop_words': STOP_WORDS, 'min_df': .04, 'max_df': .1})
         else:
             print(f"Method '{how}' is unrecognized, no vectorizer was made")
             self.vec = None
@@ -142,7 +147,8 @@ class T2v(Vectorizer):
             uni_top = [feature_names[i] for i in sorting if len(feature_names[i].split(' ')) == 1][: top_n]
             bi_top = [feature_names[i] for i in sorting if len(feature_names[i].split(' ')) == 2][: top_n]
             all_top = [feature_names[i] for i in sorting][: top_n]
-            print("top all: {}".format(all_top))
+            if all_top != uni_top:
+                print("top all: {}".format(all_top))
             print("top uni: {}".format(uni_top))
             print("top bi: {}".format(bi_top))
             # print all bi-gram features
