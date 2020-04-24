@@ -29,12 +29,9 @@ This research project attempts to change a given text's sentiment without alteri
 = TODOS =
 =========
 
-TODO try to vectorize whole reviews by weighted average of tf-idf score * w2v vector - link 4
-TODO think again about using adjectives only
-TODO in the vectorizers - if there's not enough memory to train on all the data at once then split the data
-     and train twice
-TODO consider defining my own vocabulary for the tfidf vectorizer
-
+TODO add binary arg to parser to specify if the input file should be read in binary mode
+TODO test combined classifier on bigger data to see if better than flair alone
+TODO fixed relative paths to be able to run code from nlp_module.py
 
 =========
 = LINKS =
@@ -60,6 +57,9 @@ https://towardsdatascience.com/knn-using-scikit-learn-c6bed765be75
 
 7. Pre-trained networks:
 https://medium.com/@b.terryjack/nlp-pre-trained-sentiment-analysis-1eb52a9d742c
+
+8. List of positive and negative words. Used as vocabulary for TfidfVectorizer:
+https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html#lexicon
 
 =========
 = Notes =
@@ -100,3 +100,20 @@ if i want to rid the text of spelling mistakes and stopwords im going to need a 
 3. make cmd interface for the classifier and java wrapper class, create slider
 4. get synonyms for each word in vocab to replace in review or use Word2Vec to get synonyms
 5. make refresh button
+
+
+=======
+= API =
+=======
+
+dev/nlp_module.py:
+    Usage: nlp_module.py <review: str>
+    Output:  ['POSITIVE'/'NEGATIVE, <confidence>]
+             [{syn1, syn2, syn3, syn4},...,{syn1, syn2, syn3, syn4}]
+
+    classify(review: str):
+        Returns flair classification of given review -
+            ['POSITIVE'/'NEGATIVE', <confidence>]
+    extract_features(review: str):
+        Returns a dictionary of features and their synonyms from this review -
+            {feature_1: [syn1, syn2], ..., feature_n: [syn1, syn2]}

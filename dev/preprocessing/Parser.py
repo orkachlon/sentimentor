@@ -52,13 +52,13 @@ class FileParser(Parser):
             lines = f.readlines()
         if file_name in ['bin_train.csv', 'bin_test.csv']:
             self.__num_reviews = len([line for line in lines if len(line) > 1])
-        elif file_name == 'movies.txt':
+        elif file_name == 'movies.txt.gz':
             for line in lines:
                 if line.startswith('product'):
                     self.__num_reviews += 1
 
         with open('../ml-dataset/parser_progress.txt', 'a') as f:
-            f.write(f"file_name: {file_name}\n")
+            f.write(f"\nfile_name: {file_name}\n")
             f.write(f"num_reviews: {self.__num_reviews}\n")
             f.write("curr_review: 0\n")
 
@@ -96,25 +96,6 @@ class FileParser(Parser):
         rev = ReviewData(self._scores[self.__curr_review], self._texts[self.__curr_review])
         self.__curr_review += 1
         return rev
-        # with open(self._file, 'r', encoding=self._encoding) as f:
-        #     f.seek(self.__seek_position)
-        #     score = -1
-        #     text = None
-        #     line = f.readline()
-        #     self.__line_cursor += 1
-        #     while line != '\n' and line:
-        #         line = f.readline()
-        #         self.__line_cursor += 1
-        #
-        #         if line.startswith('review/score'):
-        #             score = float(line.split()[1])
-        #         elif line.startswith('review/text'):
-        #             text = line[len('review/text: '):]
-        #
-        #     self.__seek_position = f.tell()
-        #     if score > 0 and text:
-        #         self.__curr_review += 1
-        #         return ReviewData(score, text)
 
     def __iter__(self):
         tmp = self.__curr_review

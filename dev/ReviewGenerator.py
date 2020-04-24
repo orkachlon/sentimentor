@@ -31,13 +31,15 @@ class ReviewGenerator:
         values = self._iter_values
         if os.path.isdir(self._path):
             file_list = os.listdir(self._path)
-            # shuffle files for some variance
+            # shuffle files for more variance
             if self._shuffle:
                 random.shuffle(file_list)
             for file in file_list:
                 file_path = os.path.join(self._path, file)
                 if os.path.isfile(file_path):
                     df = pd.read_csv(open(file_path, 'r'), delimiter=',', quotechar='"', escapechar='\\', header=0)
+                    if self._shuffle:
+                        df = df.sample(frac=1).reset_index(drop=True)
                     for j, row in df.iterrows():
                         if j == self._limit:
                             return
@@ -79,6 +81,9 @@ class BalancedReviewGenerator(ReviewGenerator):
 
     def as_df(self):
         df = pd.concat(pd.DataFrame(gen) for gen in self._gens)
+        if self._limit:
+            df = pd.concat([df.loc[df.score == s].iloc[: int(self._limit / len(set(df.score)))]
+                            for s in set(df.score)])
         return df if not self._shuffle else df.sample(frac=1).reset_index(drop=True)
 
 
@@ -88,16 +93,17 @@ class BinaryReviewGenerator(ReviewGenerator):
 
     def __iter__(self):
         values = self._iter_values
-        df = pd.read_csv(open(self._path, 'r'), delimiter=',', quotechar='"', header=0, names=['text', 'score'], encoding='utf-8')
+        df = pd.read_csv(open(self._path, 'r'),
+                         delimiter=',', quotechar='"', header=0, names=['score', 'text'], encoding='cp1252')
         if self._shuffle:
             df = df.sample(frac=1).reset_index(drop=True)
         for i, row in df.iterrows():
-            if i >= self._limit:
+            if i == self._limit:
                 break
             yield row if values == 'row' else row['text'] if values == 'text' else row['score']
 
     def as_df(self):
-        df = pd.read_csv(open(self._path, 'r'), delimiter=',', quotechar='"', header=0, names=['text', 'score'])
+        df = pd.DataFrame(self)
         if self._limit:
             df = pd.concat([df.loc[df.score == 'neg'].iloc[: int(self._limit / 2)],
                             df.loc[df.score == 'pos'].iloc[: int(self._limit / 2)]])

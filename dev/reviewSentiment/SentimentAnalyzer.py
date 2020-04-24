@@ -1,6 +1,5 @@
 import os
 import nltk
-import flair
 import pickle
 import random
 import operator
@@ -9,13 +8,16 @@ import pandas as pd
 import seaborn as sns
 
 from typing import *
-from textblob import TextBlob
 from statistics import mode
+from textblob import TextBlob
 from matplotlib import pyplot as plt
+from flair.data import Sentence
+from flair.models import TextClassifier
 from nltk.classify import ClassifierI
 from nltk.tokenize import word_tokenize
 from nltk.sentiment import SentimentAnalyzer
-from nltk.sentiment.vader import SentimentIntensityAnalyzer  # accuracy on bin_train.csv: 0.692
+from nltk.sentiment.vader import SentiText, SentimentIntensityAnalyzer  # accuracy on bin_train.csv: 0.692
+from nltk.sentiment.sentiment_analyzer import SentimentAnalyzer
 from nltk.classify.scikitlearn import SklearnClassifier
 from sklearn.svm import SVC, LinearSVC
 from sklearn.utils import resample
@@ -127,11 +129,12 @@ def test_pretrained_model(df: pd.DataFrame, name: str) -> None:
     print(f"{name} accuracy: {len(df.loc[correct]) / df.shape[0]}")
 
 
-def try_vader(df: pd.DataFrame, test_model=True) -> None:
+def try_vader(df: pd.DataFrame, test_model=True) -> SentimentIntensityAnalyzer:
     sid = SentimentIntensityAnalyzer()
     df['pred'] = list(map(lambda s: sid.polarity_scores(s)['compound'], df.text))
     if test_model:
         test_pretrained_model(df, 'VADER')
+    return sid
 
 
 def try_textblob(df: pd.DataFrame, test_model=True) -> None:
@@ -141,13 +144,28 @@ def try_textblob(df: pd.DataFrame, test_model=True) -> None:
 
 
 def try_flair(df: pd.DataFrame, test_model=True) -> None:
-    model = flair.models.TextClassifier.load('en-sentiment')
-    df['sentence_obj'] = list(map(flair.data.Sentence, df.text))
-    for sentence in df.sentence_obj:
-        model.predict(sentence)
-    df['pred'] = list(map(lambda s: -1 if s.labels[0].value == 'NEGATIVE' else 1, df.sentence_obj))
+    model = TextClassifier.load('en-sentiment')  # type: TextClassifier
+    df['sentence_obj'] = list(map(Sentence, df.text))
+    model.predict(df.sentence_obj.to_list())
+    df['pred'] = list(map(lambda s: 1 if s.labels[0].value == 'POSITIVE' else - 1, df.sentence_obj))
     if test_model:
         test_pretrained_model(df, 'Flair')
+
+
+def try_combined(df: pd.DataFrame, test_model=True) -> None:
+    vader = SentimentIntensityAnalyzer()
+    fl = TextClassifier.load('en-sentiment')  # type: TextClassifier
+    df['sentence_obj'] = list(map(Sentence, df.text))
+    fl.predict(df.sentence_obj.to_list())
+    df['flair_pred'] = list(map(lambda s: s.labels[0].score * (1 if s.labels[0].value == 'POSITIVE' else -1),
+                                df['sentence_obj']))
+
+    df['textblob_pred'] = list(map(lambda x: TextBlob(x).sentiment.polarity, df.text))
+
+    df['vader_pred'] = list(map(lambda s: vader.polarity_scores(s)['compound'], df.text))
+    df['pred'] = df[['vader_pred', 'textblob_pred', 'flair_pred']] @ np.array([.6, .6, .9])
+    if test_model:
+        test_pretrained_model(df, "Combined vader and flair")
 
 
 def model_selection(df: pd.DataFrame, vec) -> None:
@@ -258,10 +276,20 @@ if __name__ == '__main__':
 
     # model_selection(df, T2v())
 
+    # ===================
+    # = kNN from link 6 =
+    # ===================
+
     # try_kNN(df, range(1, 26))
+
+    # ===========================
+    # = classifiers from link 7 =
+    # ===========================
 
     # try_vader(df)
     # try_textblob(df)
 
     # sample less ! this take a lot of time !
-    try_flair(df)
+    # try_flair(df)
+
+    try_combined(df)

@@ -1,21 +1,25 @@
 import os
 import random
 import pickle
+import dev.utils as utils
 import numpy as np
 import pandas as pd
 import gensim.downloader as api
 from abc import ABC, abstractmethod
+from nltk import pos_tag
 from nltk.corpus import stopwords as stp
+from sklearn.feature_selection import chi2
 from gensim.models.word2vec import Word2Vec
 from gensim.models.fasttext import FastText
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 
-from dev.ReviewGenerator import ReviewGenerator, BalancedReviewGenerator
+from dev.ReviewGenerator import ReviewGenerator, BalancedReviewGenerator, BinaryReviewGenerator
 from dev.preprocessing.preprocessor import CSV_TO_PD_KWARGS
 
 WORD_SPACE_DIM = 300
-CUSTOM_STOP_WORDS = ['really', 'watch', 'money', 'make', 'people', 'time', 'get', 'would']
+CUSTOM_STOP_WORDS = ['really', 'watch', 'money', 'make', 'people', 'ever', 'seen',
+                     'time', 'get', 'would', 'special', 'effects', 'many']
 STOP_WORDS = stp.words('english') + \
              [w.replace("'", "") for w in stp.words('english') if "'" in w] + \
              CUSTOM_STOP_WORDS
@@ -100,15 +104,24 @@ class T2v(Vectorizer):
         if len(name):
             self.vec = None
             self.load(name)
-        elif how == 'tfidf':
-            self.vec = TfidfVectorizer(**{'sublinear_tf': True, 'ngram_range': (1, 2),
-                                       'stop_words': STOP_WORDS, 'min_df': .02, 'max_df': .3})
-        elif how == 'count':
-            self.vec = CountVectorizer(**{'ngram_range': (1, 2),
-                                          'stop_words': STOP_WORDS, 'min_df': .04, 'max_df': .1})
-        else:
+        elif how not in ['tfidf', 'count']:
             print(f"Method '{how}' is unrecognized, no vectorizer was made")
             self.vec = None
+        else:
+            vocab = set()
+            with open('../ml-dataset/vocab/pos.txt', 'r') as pos:
+                for w in pos:
+                    vocab.add(w.strip())
+            with open('../ml-dataset/vocab/neg.txt', 'r') as neg:
+                for w in neg:
+                    vocab.add(w.strip())
+            if how == 'tfidf':
+                self.vec = TfidfVectorizer(**{'sublinear_tf': True, 'ngram_range': (1, 2),
+                                              'stop_words': STOP_WORDS, 'min_df': 300, 'max_df': .3,
+                                              'vocabulary': vocab})
+            if how == 'count':
+                self.vec = CountVectorizer(**{'ngram_range': (1, 2),
+                                              'stop_words': STOP_WORDS, 'min_df': .1, 'max_df': .4})
 
     def train(self, text):
         if self.vec is not None:
@@ -122,38 +135,49 @@ class T2v(Vectorizer):
         return self.vec.get_feature_names()
 
     def save(self, name):
-        with open(os.path.join("../textVectorizationModels", name), 'wb') as f:
+        with open(utils.relpath(os.path.join("textVectorization/textVectorizationModels", name)), 'wb') as f:
             pickle.dump(self.vec, f)
             f.close()
 
     def load(self, name):
-        with open(os.path.join("../textVectorizationModels", name), 'rb') as f:
+        with open(utils.relpath(os.path.join("textVectorization/textVectorizationModels", name)), 'rb') as f:
             self.vec = pickle.load(f)
             f.close()
 
     def measure_accuracy(self, X_test, y_test, top_n: int = 5):
-        feature_names = self.get_feature_names()
-        print(f"vector size: {len(feature_names)}")
-        for s in sorted(np.unique(y_test)):  # 1 2 3 4 5
+        tagged_feats = pos_tag(self.get_feature_names())
+        print(f"vector size: {len(tagged_feats)}")
+        for s in sorted(np.unique(y_test)):  # 1 2 3 4 5 / pos neg
             print(f"# {s}")
             # group by reviews with score == i
-            response = np.nonzero(np.array(y_test == s))[0]
-            # calculate feature score using its mean on the test set
-            scores = np.mean(X_test[response], axis=0)
+            # calculate feature score using its mean/chi2 on the test set
+            scores = np.mean(X_test[y_test == s], axis=0)
             # scores = chi2(X_test, y_test == s)[0]
             # sort by the scores in descending order
             sorting = np.argsort(scores)[::-1]
             # get top n uni-grams and bi-grams
-            uni_top = [feature_names[i] for i in sorting if len(feature_names[i].split(' ')) == 1][: top_n]
-            bi_top = [feature_names[i] for i in sorting if len(feature_names[i].split(' ')) == 2][: top_n]
-            all_top = [feature_names[i] for i in sorting][: top_n]
-            if all_top != uni_top:
+            uni_top = [
+                          tagged_feats[i][0] for i in sorting
+                          if tagged_feats[i][1] == 'JJ' and
+                          len(tagged_feats[i][0].split(' ')) == 1
+                       ][: top_n]
+            bi_top = [
+                         tagged_feats[i][0] for i in sorting
+                         if tagged_feats[i][1] == 'JJ' and
+                         len(tagged_feats[i][0].split(' ')) == 2
+                     ][: top_n]
+            all_top = [
+                          tagged_feats[i][0] for i in sorting
+                          if tagged_feats[i][1] == 'JJ'
+                       ][: top_n]
+            if np.any(list(map(lambda x: x not in uni_top, all_top))):
                 print("top all: {}".format(all_top))
             print("top uni: {}".format(uni_top))
-            print("top bi: {}".format(bi_top))
+            if bi_top:
+                print("top bi: {}".format(bi_top))
             # print all bi-gram features
         print("\nall bi-grams:")
-        print([feat for feat in feature_names if len(feat.split(' ')) == 2])
+        print([feat[0] for feat in tagged_feats if len(feat[0].split(' ')) == 2])
 
 
 class D2v(Vectorizer):
@@ -235,9 +259,10 @@ class ComplexT2v(Vectorizer):
 def test_w2v(path_to_data, load=False, local=True, limit=100, save=True):
     model = W2v(path_to_data, load, local, limit)
     vocab = model.get_feature_names()
-    print(len(vocab))
-    model.transform(pd.DataFrame(['davinci'], columns=['text']))
-    print()
+    # model.transform(pd.DataFrame(['davinci'], columns=['text']))
+    print(model.wv.most_similar_cosmul(positive=['abrasive', 'good']))
+    # print(model.wv.most_similar_cosmul(positive=['good'], negative=['bad']))
+    # print(model.wv.most_similar(positive=['bad'], negative=['more']))
     if save:
         model.save(f"{os.path.basename(path_to_data).split('.')[0]}_{limit if limit is not None else 0}")
 
@@ -247,6 +272,7 @@ def test_t2v(df, how='tfidf'):
     X, y = df.text, df.score
     X = vectorizer.train(X)
     vectorizer.measure_accuracy(X, y, 10)
+    # vectorizer.save("t2v_50k.model")
 
 
 def test_d2v(path_to_data, lim=100, load=False, save=True):
@@ -262,17 +288,17 @@ def test_d2v(path_to_data, lim=100, load=False, save=True):
 
 
 if __name__ == '__main__':
+    # ======= sample all data =======
+    # df = pd.DataFrame(ReviewGenerator("../csv"))
+
     # ======= sample balanced data =======
-    # -- tried to sample data without spelling mistakes but it takes too long
-    # df = pd.DataFrame(columns=['score', 'text'])
-    # clean_kwargs = {k: k == 'spell' for k in ['spell', 'stop', 'unrecognized', 'html', 'num', 'punct']}
-    # for i in range(1, 6):
-    #     gen = BalancedReviewGenerator(f"movies_{i}", 1000, True)
-    #     gen.balance_data()
-    #     df = pd.concat([df, pd.DataFrame(clean_review_generator(gen, **clean_kwargs))])
-    df = pd.concat([pd.DataFrame(BalancedReviewGenerator(f"movies_{i}", 10000, True)) for i in range(1, 11)])
+    # df = pd.concat([pd.DataFrame(BalancedReviewGenerator(f"movies_{i}", 1000, True))
+    #                 for i in range(1, 11)])
+    df = pd.concat([BinaryReviewGenerator("../csv/bin_train_1.csv").as_df(),
+                    BinaryReviewGenerator("../csv/bin_test.csv").as_df()])
+
     print(f"balance:\n{df.score.value_counts()}")
 
-    # test_w2v(r"../textVectorizationModels/text8.model", load=True, save=False)
+    # test_w2v(r"textVectorizationModels\csv_80.model", load=True, save=False)
     # test_d2v("../csv/movie_reviews_1.csv", lim=10000, save=False)
     test_t2v(df)
