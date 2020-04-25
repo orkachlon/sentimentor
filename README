@@ -61,6 +61,49 @@ https://medium.com/@b.terryjack/nlp-pre-trained-sentiment-analysis-1eb52a9d742c
 8. List of positive and negative words. Used as vocabulary for TfidfVectorizer:
 https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html#lexicon
 
+====================
+= Folder structure =
+====================
+
+interactive-ml-project-1: (root)
+    app: (frontend)
+        app.pde
+    dev: (backend)
+        csv: (data organized as csv without encoding problems)
+            movies_{1-80}.csv
+            bin_train_1.csv
+            bin_test_1.csv
+        ml-dataset: (raw data files)
+            vocab: (word lists for tfidf vocabulary)
+                pos.txt
+                neg.txt
+            bin_test.csv
+            bin_train.csv
+            movies.txt.gz
+            file_info.txt
+            parser_progress.txt
+        reviewsByStarRating: (the same data from files movies_{1-80}.csv but sorted by rating)
+            movies_{1-80}_score{1-5}.csv
+        test: (directory for testing on temporary files)
+        preprocessing: (anything that has to do with cleaning and reorganizing raw data)
+            FileData.py (not used anymore)
+            Parser.py
+            preprocessor.py
+        textVectorization: (anything that has to do with embedding text as vectors)
+            textVectorizationModels: (saved vectorizer models)
+                csv_80.model
+                t2v_all_lim5k.model
+                t2v_50k.model
+                ...
+            RakeExtractor.py (not used anymore)
+            text_vectorization.py
+        reviewSentiment: (anything that has to do with text classification and sentiment analysis)
+            SentimentAnalyzer.py
+        utils.py
+        ReviewGenerator.py
+        nlp_module.py
+
+
 =========
 = Notes =
 =========

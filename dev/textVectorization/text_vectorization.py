@@ -295,7 +295,7 @@ if __name__ == '__main__':
     # df = pd.concat([pd.DataFrame(BalancedReviewGenerator(f"movies_{i}", 1000, True))
     #                 for i in range(1, 11)])
     df = pd.concat([BinaryReviewGenerator("../csv/bin_train_1.csv").as_df(),
-                    BinaryReviewGenerator("../csv/bin_test.csv").as_df()])
+                    BinaryReviewGenerator("../csv/bin_test_1.csv").as_df()])
 
     print(f"balance:\n{df.score.value_counts()}")
 
