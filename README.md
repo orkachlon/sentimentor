@@ -7,13 +7,13 @@ Files
 `ReviewGenerator.py`: a generator for reviews and their scores
 
 `textVectorization/text_vectorization.py`: library containing a couple of different text vectorizers
-    dependencies: `gensim`
-    recommended: `cython` - needed for faster training speed
+- dependencies: `gensim`
+- recommended: `cython` - needed for faster training speed
 
 `textVectorization/RakeExtractor.py`: An attempt at the RAKE algorithm using nltk
 
 `dataParsing/data_organizer.py`: An organizer for the 8mil reviews file
-    dependencies: `FileData`, `Parser`
+- dependencies: `FileData`, `Parser`
 
 `reviewSentiment/SentimentAnalyzer`: a place to try out sentiment analysis using the different vectorization
                                      models
@@ -21,7 +21,7 @@ Files
 Description
 -----------
 
-This research project attempts to change a given text's sentiment without altering its structure/
+This research project attempts to test a machine's ablity to recognize and take part in textual sentimentality.
 
 TODOS
 -----
