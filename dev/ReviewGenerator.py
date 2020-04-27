@@ -1,7 +1,7 @@
 import os
 import random
 import pandas as pd
-from dev.preprocessing.preprocessor import get_text_cleaner
+from preprocessing.preprocessor import get_text_cleaner
 
 
 class ReviewGenerator:
@@ -103,10 +103,11 @@ class BinaryReviewGenerator(ReviewGenerator):
             yield row if values == 'row' else row['text'] if values == 'text' else row['score']
 
     def as_df(self):
-        df = pd.DataFrame(self)
+        df = pd.read_csv(open(self._path, 'r'),
+                         delimiter=',', quotechar='"', header=0, names=['score', 'text'], encoding='cp1252')
         if self._limit:
-            df = pd.concat([df.loc[df.score == 'neg'].iloc[: int(self._limit / 2)],
-                            df.loc[df.score == 'pos'].iloc[: int(self._limit / 2)]])
+            df = pd.concat([df.loc[df.score == -1].iloc[: int(self._limit / 2)],
+                            df.loc[df.score == 1].iloc[: int(self._limit / 2)]])
         return df if not self._shuffle else df.sample(frac=1).reset_index(drop=True)
 
 

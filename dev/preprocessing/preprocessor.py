@@ -7,8 +7,8 @@ from nltk import pos_tag
 from nltk.corpus import stopwords
 from spellchecker import SpellChecker
 
-from dev.preprocessing.Parser import FileParser
-from dev.preprocessing.FileData import *
+from preprocessing.Parser import FileParser
+from preprocessing.FileData import *
 
 LARGE_INPUT_FILE = '../ml-dataset/movies.txt'
 LARGE_INPUT_FILE_ENCODING = 'iso-8859-1'

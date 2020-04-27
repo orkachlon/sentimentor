@@ -1,7 +1,7 @@
 import os
 import random
 import pickle
-import dev.utils as utils
+import utils as utils
 import numpy as np
 import pandas as pd
 import gensim.downloader as api
@@ -14,8 +14,8 @@ from gensim.models.fasttext import FastText
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 
-from dev.ReviewGenerator import ReviewGenerator, BalancedReviewGenerator, BinaryReviewGenerator
-from dev.preprocessing.preprocessor import CSV_TO_PD_KWARGS
+from ReviewGenerator import ReviewGenerator, BalancedReviewGenerator, BinaryReviewGenerator
+from preprocessing.preprocessor import CSV_TO_PD_KWARGS
 
 WORD_SPACE_DIM = 300
 CUSTOM_STOP_WORDS = ['really', 'watch', 'money', 'make', 'people', 'ever', 'seen',
@@ -173,7 +173,7 @@ class T2v(Vectorizer):
             if np.any(list(map(lambda x: x not in uni_top, all_top))):
                 print("top all: {}".format(all_top))
             print("top uni: {}".format(uni_top))
-            if bi_top:
+            if len(bi_top):
                 print("top bi: {}".format(bi_top))
             # print all bi-gram features
         print("\nall bi-grams:")

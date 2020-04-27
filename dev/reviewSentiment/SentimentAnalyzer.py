@@ -29,8 +29,8 @@ from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import cross_val_score
 
-from dev.textVectorization.text_vectorization import T2v
-from dev.ReviewGenerator import BalancedReviewGenerator, BinaryReviewGenerator
+from textVectorization.text_vectorization import T2v
+from ReviewGenerator import BalancedReviewGenerator, BinaryReviewGenerator
 
 MODELS_DIR = 'sentimentClassificationModels'
 NUM_MODELS = 6
@@ -125,7 +125,8 @@ def try_kNN(df: pd.DataFrame, k: Union[int, range] = 5, scale=True, test_model=T
 
 
 def test_pretrained_model(df: pd.DataFrame, name: str) -> None:
-    correct = ((df.score == 'pos') & (df.pred > 0)) | ((df.score == 'neg') & (df.pred < 0))
+    correct = ((df.score == 1) & (df.pred > 0)) | \
+              ((df.score == -1) & (df.pred < 0))
     print(f"{name} accuracy: {len(df.loc[correct]) / df.shape[0]}")
 
 
@@ -153,6 +154,11 @@ def try_flair(df: pd.DataFrame, test_model=True) -> None:
 
 
 def try_combined(df: pd.DataFrame, test_model=True) -> None:
+    """
+    accuracy: 0.924
+    :param df: data to test on, must include columns 'text', 'score'
+    :param test_model: whether to log the model's performance or not
+    """
     vader = SentimentIntensityAnalyzer()
     fl = TextClassifier.load('en-sentiment')  # type: TextClassifier
     df['sentence_obj'] = list(map(Sentence, df.text))
@@ -163,9 +169,9 @@ def try_combined(df: pd.DataFrame, test_model=True) -> None:
     df['textblob_pred'] = list(map(lambda x: TextBlob(x).sentiment.polarity, df.text))
 
     df['vader_pred'] = list(map(lambda s: vader.polarity_scores(s)['compound'], df.text))
-    df['pred'] = df[['vader_pred', 'textblob_pred', 'flair_pred']] @ np.array([.6, .6, .9])
+    df['pred'] = df[['vader_pred', 'textblob_pred', 'flair_pred']] @ (np.array([.6, .6, .9]) / 2.1)
     if test_model:
-        test_pretrained_model(df, "Combined vader and flair")
+        test_pretrained_model(df, "Combined vader, textblob and flair")
 
 
 def model_selection(df: pd.DataFrame, vec) -> None:
@@ -243,7 +249,7 @@ def split_data(df: pd.DataFrame, ratio: float = .75, log=True):
 if __name__ == '__main__':
     # sample balanced data
     # df = pd.concat([pd.DataFrame(BalancedReviewGenerator(f"movies_{i}", 1000, True)) for i in range(1, 11)])
-    df = BinaryReviewGenerator("../ml-dataset/bin_train.csv", lim=10).as_df()
+    df = BinaryReviewGenerator("../csv/bin_train_1.csv", lim=1700).as_df()
     print(f"balance:\n{df.groupby('score').count()}")
     # print(df.head())
 

@@ -9,7 +9,7 @@ from spellchecker import SpellChecker
 from nltk import pos_tag
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
-from dev.textVectorization.text_vectorization import W2v, T2v
+from textVectorization.text_vectorization import W2v, T2v
 
 
 MODIFIERS = {0: 'terrible', 1: 'excellent'}
@@ -33,7 +33,7 @@ def extract_features(review: str, t2v: T2v, w2v: W2v):
     tag_dict = {w[0]: w[1] for w in pos_tag(re.sub(r"[^a-zA-Z0-9\s]", " ", review).split())}
     for f in features:
         # skip tags which aren't likely to show sentiment
-        if tag_dict[f] not in ALLOWED_TAGS:
+        if tag_dict[f.lower()] not in ALLOWED_TAGS:
             continue
         curr = []
         for i in range(len(MODIFIERS)):

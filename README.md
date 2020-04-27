@@ -61,6 +61,9 @@ https://medium.com/@b.terryjack/nlp-pre-trained-sentiment-analysis-1eb52a9d742c
 8. List of positive and negative words. Used as vocabulary for TfidfVectorizer:
 https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html#lexicon
 
+9. How to run commands on terminal from Java:
+https://stackoverflow.com/questions/15464111/run-cmd-commands-through-java
+
 ====================
 = Folder structure =
 ====================
