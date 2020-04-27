@@ -1,4 +1,5 @@
 import controlP5.*;
+import SentimentAnalyzer;
 
 static final String DEFAULT_TEXT = "Write a review!";
 static final int MAX_LEN = 286;

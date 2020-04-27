@@ -28,21 +28,27 @@ def extract_features(review: str, t2v: T2v, w2v: W2v):
     features = np.array(t2v.get_feature_names())[sorting]
 
     # return synonyms for each feature
-    syns = {}
+    syns = []
     splchkr = SpellChecker()
     tag_dict = {w[0]: w[1] for w in pos_tag(re.sub(r"[^a-zA-Z0-9\s]", " ", review).split())}
     for f in features:
         # skip tags which aren't likely to show sentiment
         if tag_dict[f.lower()] not in ALLOWED_TAGS:
             continue
-        curr = []
+        # create list to hold feature in the middle and synonyms from each side
+        curr = list([0] * (len(MODIFIERS) + 1))
+        curr[(len(curr) // 2)] = f
         for i in range(len(MODIFIERS)):
             pos = [f, MODIFIERS[i]]
-            neg = [MODIFIERS[1 - i]]
+            neg = [MODIFIERS[len(MODIFIERS) - 1 - i]]
+            # get similarity list
             sim_list = list(map(lambda w: w[0], w2v.wv.most_similar_cosmul(positive=pos, negative=neg)))
+            # filter list from non-adjectives and correct spelling errors
             sim_list = [splchkr.correction(w[0]) for w in pos_tag(sim_list) if w[1] in ALLOWED_TAGS]
-            curr.append(sim_list[0])
-        syns[f] = curr
+            # take the most similar
+            # skip the cell with the feature itself
+            curr[i if i < len(curr) // 2 else i + 1] = sim_list[0]
+        syns.append(curr)
     return syns
 
 
