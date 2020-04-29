@@ -1,3 +1,5 @@
+//package libraries.sentimentAnalysis.src.sentimentAnalysis;
+
 import java.util.List;
 
 public class Feature {
@@ -6,25 +8,40 @@ public class Feature {
 
     private Integer index;
 
+    private int prev;
+
     public Feature(List<String> synonyms) {
         this.synonyms = synonyms;
-        this.index = 1;
+        this.index = synonyms.size() / 2;
+        this.prev = this.index;
     }
 
-    public Boolean positify() {
-        if (index < synonyms.size()) {
-            index++;
+    public Boolean posify() {
+        if (this.index < synonyms.size() - 1) {
+            this.prev = this.index;
+            this.index++;
+//            System.out.println(this.synonyms.get(index - 1) + " -> " + this.synonyms.get(index));
             return true;
         }
         return false;
     }
 
-    public Boolean negatify() {
-        if (index > 0) {
-            index--;
+    public Boolean negify() {
+        if (this.index > 0) {
+            this.prev = this.index;
+            this.index--;
+//            System.out.println(this.synonyms.get(index + 1) + " -> " + this.synonyms.get(index));
             return true;
         }
         return false;
+    }
+    
+    public void reset() {
+      this.index = this.synonyms.size() / 2;
+    }
+
+    public String getPrev() {
+        return this.synonyms.get(this.prev);
     }
 
     @Override

@@ -4,19 +4,22 @@ First project in the course 'Machine learning as a tool for interactive products
 Files
 -----
 
-`ReviewGenerator.py`: a generator for reviews and their scores
-
-`textVectorization/text_vectorization.py`: library containing a couple of different text vectorizers
+`dev/nlp_module.py`: the main module to classify and extract features from a given review<br>
+`dev/ReviewGenerator.py`: a generator for reviews and their scores<br>
+`dev/textVectorization/text_vectorization.py`: library containing a couple of different text vectorizers
 - dependencies: `gensim`
 - recommended: `cython` - needed for faster training speed
 
-`textVectorization/RakeExtractor.py`: An attempt at the RAKE algorithm using nltk
-
-`dataParsing/data_organizer.py`: An organizer for the 8mil reviews file
+`dev/textVectorization/RakeExtractor.py`: An attempt at the RAKE algorithm using nltk
+`dev/dataParsing/data_organizer.py`: An organizer for the 8mil reviews file
 - dependencies: `FileData`, `Parser`
 
-`reviewSentiment/SentimentAnalyzer`: a place to try out sentiment analysis using the different vectorization
-                                     models
+`dev/reviewSentiment/SentimentAnalyzer`: a place to try out sentiment analysis using the different vectorization
+                                         models<br>
+`app/Feature.java`: Represents a feature in a review and its synonyms<br>
+`FeatureManager.java`: A manager class for the found features in a review<br>
+`SenimentAnalyzer.java`: The module in charge of using the `nlp_module.py` in the Processing app<br>
+`app.pde`: The main Processing app that runs the GUI and uses the `nlp_module.py` to process reviews<br>
 
 Description
 -----------
@@ -26,9 +29,11 @@ This research project attempts to test a machine's ablity to recognize and take 
 TODOS
 -----
 
-* [ ] TODO add binary arg to parser to specify if the input file should be read in binary mode
-* [ ] TODO test combined classifier on bigger data to see if better than flair alone
-* [ ] TODO fixed relative paths to be able to run code from nlp_module.py
+* [ ] add binary arg to parser to specify if the input file should be read in binary mode
+* [X] test combined classifier on bigger data to see if better than flair alone
+* [X] fix relative paths to be able to run code from nlp_module.py
+* [X] add variance to returned synonyms - choose random word instead of taking top one perhaps?
+* [X] related to this~^ make synonyms unique? link each feature to the instance in the text?
 
 LINKS
 -----
@@ -68,8 +73,10 @@ interactive-ml-project-1: (root)
 ├── README.md
 ├── app: (frontend)
 │   ├── Feature.java
+│   ├── FeatureManager.java
 │   ├── SentimentAnalyzer.java
-│   └── app.pde
+│   ├── app.pde
+│   └── out: (Processing folder)
 └── dev: (backend)
     │
     ├── ReviewGenerator.py

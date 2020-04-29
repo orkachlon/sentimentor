@@ -16,3 +16,11 @@ dev/reviewSentiment/pickledData
 # models folders
 dev/textVectorization/textVectorizationModels
 dev/reviewSentiment/sentimentClassificationModels
+
+# app related folders
+examples
+libraries
+modes
+templates
+tools
+production
