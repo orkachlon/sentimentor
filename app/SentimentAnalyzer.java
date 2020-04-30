@@ -68,7 +68,7 @@ public class SentimentAnalyzer {
         Feature lastChanged;
         int bucket = Collections.binarySearch(this.buckets, score);
         if (bucket < 0) {
-            bucket = (-1 * bucket) - 1;
+            bucket = (-1 * bucket) - 1; // the insertion point
         }
         if (bucket < this.currBucket) {
             // for each of these partitions a word needs to be swapped
@@ -76,7 +76,6 @@ public class SentimentAnalyzer {
             // the partitions are defined by the amount of features so there should always be
             // exactly enough
             for (int i = this.currBucket; i > bucket; --i) {
-
                 if (this.featureManager.negify()) {
                     try {
                         lastChanged = this.featureManager.getLastChanged();
@@ -85,12 +84,11 @@ public class SentimentAnalyzer {
                     }
                     prev = lastChanged.getPrev();
                     synonym = lastChanged.toString();
-                    newReview = newReview.replaceFirst(prev, synonym);
+                    newReview = newReview.replaceAll(prev, synonym);
                 }
             }
         } else if (bucket > this.currBucket) {
             for (int i = this.currBucket; i < bucket; ++i) {
-
                 if (this.featureManager.posify()) {
                     try {
                         lastChanged = this.featureManager.getLastChanged();
@@ -99,7 +97,7 @@ public class SentimentAnalyzer {
                     }
                     prev = lastChanged.getPrev();
                     synonym = lastChanged.toString();
-                    newReview = newReview.replaceFirst(prev, synonym);
+                    newReview = newReview.replaceAll(prev, synonym);
                 }
             }
         }
@@ -122,9 +120,9 @@ public class SentimentAnalyzer {
         Pattern classPattern = Pattern
                 .compile("^\\['(?<class>POSITIVE|NEGATIVE)',\\s*(?<confidence>[0-9]\\.[0-9]+)\\]$");
         //noinspection RegExpRedundantEscape
-        Pattern featuresPattern = Pattern.compile("\\[((?:\\[(?:(?:'\\w+'(?:, )?)+)\\](?:, )?)+)\\]");
+        Pattern featuresPattern = Pattern.compile("\\[((?:\\[(?:(?:'\\w+'(?:, )?){3})\\](?:, )?)+)\\]");
         //noinspection RegExpRedundantEscape
-        Pattern featurePattern = Pattern.compile("\\[(?<synonyms>(?:'\\w+'(?:, )?)+)\\]");
+        Pattern featurePattern = Pattern.compile("\\[(?<synonyms>(?:'\\w+'(?:, )?){3})\\]");
         Matcher featureMatcher, classMatcher, featuresMatcher;
         while (true) {
             line = reader.readLine();

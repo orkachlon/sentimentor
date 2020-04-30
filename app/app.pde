@@ -2,16 +2,21 @@
 import controlP5.*;
 
 static final String DEFAULT_TEXT = "Write a review!";
-static final int MAX_LEN = 350;
+static final int MAX_LEN = 400;
 
 String review;
 float sentiment;
 boolean analyzed;
 SentimentAnalyzer analyzer;
 
+// GUI
+color BGColor = color(0, 45, 90);
+color textBGColor = color(0, 0, 26);
+color textColor = color(0, 116, 217);
 ControlP5 cp5;
 Textarea textBox;
 Slider sentimentSlider;
+Button submitButton;
 
 
 void setup() {
@@ -27,26 +32,27 @@ void setup() {
                   .setSize(width - 100, height - 100)
                   .setFont(createFont("consolas", 24))
                   .setLineHeight(32)
-                  .setColor(color(128, 10, 210))
-                  .setColorBackground(color(60, 255, 100))
-                  .setColorForeground(color(255, 100))
+                  .setColor(textColor)
+                  .setColorBackground(textBGColor)
+                  //.setColorForeground(color(0, 128, 255))
                   ;
     textBox.setText(review);
     
     // Set up sentiment slider
     sentimentSlider = cp5.addSlider("sentiment")
                       .setPosition(width - 60, 50)
-                      .setSize(30, 300)
+                      .setSize(30, height - 140)
                       .setRange(0.0, 1.0)
                       .setValue(0.5)
                       .setLabelVisible(false)
                       .lock()
                       ;
     // Set up submit button
-    cp5.addButton("submit")
-     .setPosition(10, height - 80)
-     .setSize(width - 100, 50)
-     ;
+    submitButton = cp5.addButton("submit")
+                   .setPosition(10, height - 80)
+                   .setSize(width - 100, 50)
+                   ;
+    submitButton.getCaptionLabel().setFont(new ControlFont(createFont("consolas", 24)));
     
     // initialize the analyzer
     analyzer = SentimentAnalyzer.getInstance();
@@ -54,7 +60,7 @@ void setup() {
 }
 
 void draw() {
-    background(100, 240, 69);
+    background(BGColor);
 }
 
 void keyPressed() {
@@ -93,7 +99,7 @@ public void submit() {
     analyzer.analyze(review);
   } catch (RuntimeException e) {
     println(e);
-    textBox.setColorBackground(color(60, 255, 100));
+    textBox.setColorBackground(textBGColor);
     return;
   }
   analyzed = true;
@@ -102,7 +108,7 @@ public void submit() {
   println(sentiment);
   sentimentSlider.setValue(sentiment);
   sentimentSlider.unlock();
-  textBox.setColorBackground(color(60, 255, 100));
+  textBox.setColorBackground(textBGColor);
 }
 
 public void sentiment(float score) {

@@ -1,31 +1,20 @@
-import os
-import nltk
-import pickle
-import random
-import operator
 import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from typing import *
-from statistics import mode
+from typing import Union, List
 from textblob import TextBlob
 from matplotlib import pyplot as plt
 from flair.data import Sentence
 from flair.models import TextClassifier
-from nltk.classify import ClassifierI
-from nltk.tokenize import word_tokenize
-from nltk.sentiment import SentimentAnalyzer
-from nltk.sentiment.vader import SentiText, SentimentIntensityAnalyzer  # accuracy on bin_train.csv: 0.692
-from nltk.sentiment.sentiment_analyzer import SentimentAnalyzer
-from nltk.classify.scikitlearn import SklearnClassifier
-from sklearn.svm import SVC, LinearSVC
+from nltk.sentiment.vader import SentimentIntensityAnalyzer  # accuracy on bin_train.csv: 0.692
+from sklearn.svm import SVC
 from sklearn.utils import resample
 from sklearn.metrics import accuracy_score
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.naive_bayes import MultinomialNB, BernoulliNB
-from sklearn.linear_model import LogisticRegression, SGDClassifier
+from sklearn.metrics import plot_confusion_matrix
+from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import cross_val_score
 
@@ -35,6 +24,42 @@ from ReviewGenerator import BalancedReviewGenerator, BinaryReviewGenerator
 MODELS_DIR = 'sentimentClassificationModels'
 NUM_MODELS = 6
 NUM_STARS = 5
+
+
+class CombinedClassifier:
+
+    vader: SentimentIntensityAnalyzer
+    flair: TextClassifier
+    weights: np.ndarray
+    _estimator_type: str
+
+    def __init__(self, weights: np.ndarray = np.array([.6, .6, .9]) / 2.1):
+        self.vader = SentimentIntensityAnalyzer()
+        self.flair = TextClassifier.load('en-sentiment')
+        self.weights = weights
+        self._estimator_type = "classifier"
+
+    def predict(self, X: Union[pd.Series, List[str]]) -> np.ndarray:
+        as_sentence_obj = list(map(Sentence, X))
+        self.flair.predict(as_sentence_obj)
+        fl_pred = list(map(lambda s: s.labels[0].score * (1 if s.labels[0].value == 'POSITIVE' else -1),
+                           as_sentence_obj))
+        tb_pred = list(map(lambda x: TextBlob(x).sentiment.polarity, X))
+        vd_pred = list(map(lambda s: self.vader.polarity_scores(s)['compound'], X))
+        return np.vstack((fl_pred, tb_pred, vd_pred)).T @ self.weights
+
+    def plot_confusion(self, text: Union[pd.Series, List[str]], score: Union[np.ndarray, pd.Series]) -> None:
+        y_pred = np.sign(self.predict(text))
+        TP = np.count_nonzero(np.logical_and(y_pred == 1, y_pred == score))
+        FP = np.count_nonzero(np.logical_and(y_pred == 1, y_pred != score))
+        TN = np.count_nonzero(np.logical_and(y_pred == -1, y_pred == score))
+        FN = np.count_nonzero(np.logical_and(y_pred == -1, y_pred != score))
+        df_cm = pd.DataFrame(np.array([[TP, FP], [FN, TN]]) / len(text), index=['pos', 'neg'], columns=['pos', 'neg'])
+        plt.figure()
+        sns.heatmap(df_cm, annot=True, center=.5)
+        # plot_confusion_matrix(self, df.text, df.score, display_labels=['pos', 'neg'],
+        #                       cmap=plt.cm.Blues, normalize='all')
+        plt.show()
 
 
 def try_resampled_data(df: pd.DataFrame, resample_target: int, test_model=True):
@@ -125,8 +150,7 @@ def try_kNN(df: pd.DataFrame, k: Union[int, range] = 5, scale=True, test_model=T
 
 
 def test_pretrained_model(df: pd.DataFrame, name: str) -> None:
-    correct = ((df.score == 1) & (df.pred > 0)) | \
-              ((df.score == -1) & (df.pred < 0))
+    correct = ((df.score == 1) & (df.pred > 0)) | ((df.score == -1) & (df.pred < 0))
     print(f"{name} accuracy: {len(df.loc[correct]) / df.shape[0]}")
 
 
@@ -298,4 +322,7 @@ if __name__ == '__main__':
     # sample less ! this take a lot of time !
     # try_flair(df)
 
-    try_combined(df)
+    clf = CombinedClassifier()
+    clf.plot_confusion(df.text, df.score)
+
+    # try_combined(df)

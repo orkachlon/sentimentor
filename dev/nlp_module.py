@@ -30,16 +30,22 @@ def extract_features(review: str, t2v: T2v, w2v: W2v):
     # return synonyms for each feature
     syns = []
     splchkr = SpellChecker()
-    used_words = set()
-    tag_dict = {w[0].lower(): w[1] for w in pos_tag(re.sub(r"[^a-zA-Z0-9\s]", " ", review).split())}
-    for f in features:
-        # skip tags which aren't likely to show sentiment
-        if tag_dict[f.lower()] not in ALLOWED_TAGS:
-            continue
-        used_words.add(f)
+    tag_dict = {w[0]: w[1]
+                for w in pos_tag(re.sub(r"[^a-zA-Z0-9\s]", " ", review).split())
+                if w[1] in ALLOWED_TAGS and w[0].lower() in features}
+    if not len(tag_dict):
+        tag_dict = {w[0]: w[1]
+                    for w in pos_tag(re.sub(r"[^a-zA-Z0-9\s]", " ", review).split())
+                    if w[0].lower() in features}
+
+    used_words = set([f for f in tag_dict.keys()])
+    for f in tag_dict.keys():
         # create list to hold feature in the middle and synonyms from each side
         curr = list([0] * (len(MODIFIERS) + 1))
+        # save with capitalization if it exists!!!
         curr[(len(curr) // 2)] = f
+        # convert to lower case for convenience
+        f = f.lower()
         for i in range(len(MODIFIERS)):
             pos = [f, MODIFIERS[i]]
             neg = [MODIFIERS[len(MODIFIERS) - 1 - i]]
@@ -51,7 +57,10 @@ def extract_features(review: str, t2v: T2v, w2v: W2v):
                         if w[1] in ALLOWED_TAGS and w[0] not in used_words]
             # take the most similar
             # skip the cell with the feature itself
-            curr[i if i < len(curr) // 2 else i + 1] = sim_list[0]
+            curr[i if i < len(curr) // 2 else i + 1] = sim_list[0] \
+                if curr[len(curr) // 2][0].islower() \
+                else sim_list[0][0].upper() + sim_list[0][1:]
+
             used_words.add(sim_list[0])
         syns.append(curr)
     return syns

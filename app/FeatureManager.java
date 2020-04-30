@@ -74,6 +74,10 @@ public class FeatureManager implements Iterable<Feature> {
         return this.features.size();
     }
 
+    public Feature get(int i) {
+        return this.features.get(i);
+    }
+
     @Override
     public String toString() {
         return this.features.toString();
