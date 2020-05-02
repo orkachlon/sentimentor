@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
 public class SentimentAnalyzer {
 
     /** default conda path to use if none was given */
-    private static final String DEFAULT_CONDA_PATH = "C:\\ProgramData\\Anaconda3\\Scripts";
+    private static final String DEFAULT_CONDA_PATH = "C:/ProgramData/Anaconda3/Scripts";
 
     /** The single instance of this Singleton class*/
     private static SentimentAnalyzer instance = null;

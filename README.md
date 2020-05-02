@@ -82,19 +82,20 @@ root/
 
 ### File description
 `dev/`:
+- `Parser.py`: a parser for the Amazon 8M review and the IMDB 50K review datasets
+- `ReviewGenerator.py`: generators for reviews and their scores
+- `preprocessing.py`: contains functions to preprocess data
+- `text_vectorization.py`: library containing two different text vectorizers: Word2Vec and TfidfVectorizer
+- `sentiment_analysis.py`: contains the implementation of the classifier used for this project as well as
+                           useful functions to test out classifiers
 - `nlp_module.py`: the main module to classify and extract features from a given review
-- `ReviewGenerator.py`: a generator for reviews and their scores
-- `text_vectorization.py`: library containing a couple of different text vectorizers
-- `data_organizer.py`: An organizer for the 8mil reviews file
-- `SentimentAnalyzer`: a place to try out sentiment analysis using the different vectorization
-                         models
 
 
 `app/`:
 - `Feature.java`: Represents a feature in a review and its synonyms
 - `FeatureManager.java`: A manager class for the found features in a review
 - `SenimentAnalyzer.java`: The module in charge of using the `nlp_module.py` in the Processing app
-- `app.pde`: The main Processing app that runs the GUI and uses the `nlp_module.py` to process reviews
+- `app.pde`: The main Processing app that runs the GUI and uses the `SentimentAnalyzer.java` to process reviews
 
 References
 ----------

@@ -1,14 +1,11 @@
 
 
-
 TAR = tar
 TARFLAGS = -cvf
-EXCLUDE = --exclude
-CHDIR = -C
 
 TARNAME = sentimentAnalysis.tar
-TARSRCS = app assets dev README.md
-TAREXCLUDE = $(EXCLUDE) "app/.idea" $(EXCLUDE) "dev/__pycache__" $(EXCLUDE) "app/SATester.java"
+TARSRCS = app/*.java app/*.pde app/*.bat assets/vectorizers dev README.md
+TAREXCLUDE = --exclude "dev/__pycache__" --exclude "dev/test" --exclude "app/SATester.java"
 
 
 tar:

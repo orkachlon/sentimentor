@@ -1,6 +1,5 @@
 import os
 import pickle
-import utils as utils
 import numpy as np
 import gensim.downloader as api
 
@@ -197,7 +196,7 @@ class T2v(Vectorizer):
         Loads a previously saved model from the assets directory into this vectorizer
         :param name: of the model
         """
-        with open(utils.relpath(os.path.join("../assets/vectorizers", name)), 'rb') as f:
+        with open(os.path.join("../assets/vectorizers", name), 'rb') as f:
             self.vec = pickle.load(f)
             f.close()
 

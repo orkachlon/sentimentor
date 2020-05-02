@@ -1,9 +1,7 @@
-# Jetbrains folders
+# IDE folders
 .idea
-
-# vs code folders
-__pycache__
 .vscode
+__pycache__
 
 # data folders
 assets/csv
@@ -12,12 +10,8 @@ assets/csv
 assets
 
 # app related folders
-examples
-libraries
-modes
-templates
-tools
 production
+out
 
 # project slides, plots, etc.
 misc
@@ -25,3 +19,6 @@ misc
 # test files and folders
 app/SATester.java
 dev/test
+
+# tar
+*.tar

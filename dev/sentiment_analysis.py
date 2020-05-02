@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from abc import ABC, abstractmethod
 from typing import Union, List, Iterable, Tuple
 from textblob import TextBlob
 from matplotlib import pyplot as plt
@@ -13,32 +12,7 @@ from sklearn.metrics import accuracy_score
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 
-class TrainedTextClassifier(ABC):
-    """
-    Abstract class for pre-trained text classifiers
-    """
-
-    @abstractmethod
-    def predict(self, X: Iterable[str]) -> Union[np.ndarray, pd.Series]:
-        """
-        Predicts the labels of the given sample set X
-        :param X: sample set
-        :return: predicted labels
-        """
-        pass
-
-    @abstractmethod
-    def score(self, X: Iterable[str], y: Union[np.ndarray, pd.Series]) -> dict:
-        """
-        Calculates various useful stats of this model on the given test set and test labels
-        :param X: sample set
-        :param y: labels
-        :return: dictionary with calculated stats
-        """
-        pass
-
-
-class CombinedClassifier(TrainedTextClassifier):
+class CombinedClassifier:
     """
     A pre-trained text classifier built from a combination of nltk's vader,
     flair's TextClassifier and Textblob
@@ -115,7 +89,7 @@ def log_classifier(classifier,
     print(f"predicted classes: {np.unique(y_pred)}")
 
 
-def plot_confusion(classifier: TrainedTextClassifier,
+def plot_confusion(classifier: CombinedClassifier,
                    X: Iterable[str],
                    y: Union[np.ndarray, pd.Series]) -> None:
     """
