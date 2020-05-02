@@ -11,10 +11,11 @@ Installation
 ------------
 
 ### Dependencies
-
+#### OS
+This program currently only runs on Windows.
 #### Anaconda
 An installation of [Anaconda](https://www.anaconda.com/products/individual) 
-is needed and the `conda` command should be recognized from cmd.exe. 
+is needed with python 3.7 at least, and the `conda` command should be recognized from cmd.exe. 
 Also, a conda environment named `"ml-as-tool-project-1"` should be ready with
 the following packages installed:
 - [gensim](https://radimrehurek.com/gensim/)
@@ -24,6 +25,9 @@ the following packages installed:
 - [textblob](https://textblob.readthedocs.io/en/dev/)
 - [numpy](https://numpy.org/)
 - [spellchecker](https://github.com/barrust/pyspellchecker)
+- [pandas](https://pandas.pydata.org/)
+- [matplotlib](https://matplotlib.org/)
+- [seaborn](https://seaborn.pydata.org/)
 
 #### Processing
 This app requires an installation of [Processing 3.5.4](https://processing.org/) and the 
@@ -34,6 +38,8 @@ The trained vectorizers' files are too big to add to this repository so you will
 them from my [google drive](
 https://drive.google.com/drive/folders/1TCdIGDfix0OMFAbUtn0UaX1T3gYs4jDA?usp=sharing)
 and place the assets folder as shown in the Directory tree below.
+
+#### Finally run `app.pde` to run the program!
 
 Instructions
 ------------
@@ -48,42 +54,27 @@ Files
 -----
 ### Directory tree
 ```
-root/
+interactive-ml-project-1/
 ├── README.md
 ├── app
 │   ├── Feature.java
 │   ├── FeatureManager.java
-│   ├── SATester.java
 │   ├── SentimentAnalyzer.bat
 │   ├── SentimentAnalyzer.java
 │   └── app.pde
 ├── assets
-│   ├── csv
-│   │   ├── bin_test_1.csv
-│   │   ├── bin_train_1.csv
-│   │   └── movies_{1-80}.csv
-│   ├── raw
-│   │   ├── bin_test.csv
-│   │   ├── bin_train.csv
-│   │   ├── file_info.txt
-│   │   ├── movies.txt.gz
-│   │   └── parser_progress.txt
-│   ├── vectorizers
-│   │   ├── t2v_50k.model
-│   │   ├── w2v_csv_80.model
-│   │   ├── w2v_csv_80.model.trainables.syn1neg.npy
-│   │   └── w2v_csv_80.model.wv.vectors.npy
-│   └── vocab
-│       ├── neg.txt
-│       └── pos.txt
+│   └── vectorizers
+│       ├── t2v_50k.model
+│       ├── w2v_csv_80.model
+│       ├── w2v_csv_80.model.trainables.syn1neg.npy
+│       └── w2v_csv_80.model.wv.vectors.npy
 └── dev
     ├── Parser.py
     ├── ReviewGenerator.py
     ├── nlp_module.py
     ├── preprocessor.py
     ├── sentiment_analysis.py
-    ├── text_vectorization.py
-    └── utils.py
+    └── text_vectorization.py
 ```
 
 ### File description
@@ -108,7 +99,7 @@ References
 Not all of these references are used in the project but all of them helped me
 learn this topic and develop this project.
 
-- [Possible entire implementation of classifier including access to influential words](
+- [Implementation of classifier including access to influential words](
 https://towardsdatascience.com/basic-binary-sentiment-analysis-using-nltk-c94ba17ae386)
 
 - [Amazon 8 million review data set](
@@ -116,7 +107,7 @@ http://snap.stanford.edu/data/web-Movies.html)
 
 - [Multiclass classification with sklearn](
 https://towardsdatascience.com/multi-class-text-classification-with-scikit-learn-12f1e60e0a9f)
- thank you Yuval
+ thank you yuvalpadan
 - [Ways to vectorize document given a word vectorizer](
 https://stackoverflow.com/questions/29760935/how-to-get-vector-for-a-sentence-from-the-word2vec-of-tokens-in-sentence)
 
@@ -131,6 +122,3 @@ https://medium.com/@b.terryjack/nlp-pre-trained-sentiment-analysis-1eb52a9d742c)
 
 - [List of positive and negative words. Used as vocabulary for TfidfVectorizer](
 https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html#lexicon)
-
-- [How to run commands on terminal from Java](
-https://stackoverflow.com/questions/15464111/run-cmd-commands-through-java)

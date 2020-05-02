@@ -22,3 +22,6 @@ dev/test
 
 # tar
 *.tar
+
+# makefile
+Makefile
