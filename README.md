@@ -14,9 +14,9 @@ Installation
 
 #### Anaconda
 An installation of [Anaconda](https://www.anaconda.com/products/individual) 
-is assumed to be available at `C:\ProgramData\Anaconda` along 
-with a conda environment named `"ml-as-tool-project-1"`.
-The following python packages need to be available in the conda env:
+is needed and the `conda` command should be recognized from cmd.exe. 
+Also, a conda environment named `"ml-as-tool-project-1"` should be ready with
+the following packages installed:
 - [gensim](https://radimrehurek.com/gensim/)
 - [flair](https://github.com/flairNLP/flair)
 - [sklearn](https://scikit-learn.org/stable/)

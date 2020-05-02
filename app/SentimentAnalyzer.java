@@ -9,9 +9,6 @@ import java.util.regex.Pattern;
  */
 public class SentimentAnalyzer {
 
-    /** default conda path to use if none was given */
-    private static final String DEFAULT_CONDA_PATH = "C:/ProgramData/Anaconda3/Scripts";
-
     /** The single instance of this Singleton class*/
     private static SentimentAnalyzer instance = null;
 
@@ -20,9 +17,6 @@ public class SentimentAnalyzer {
 
     /** The review */
     public String review;
-
-    /** path to conda command */
-    private String condaPath;
 
     /** path to sketch directory */
     private String sketchPath;
@@ -41,35 +35,28 @@ public class SentimentAnalyzer {
 
     /**
      * private constructor for Singleton design
+     * @param sketchPath path to the Processing sketch
      */
-    private SentimentAnalyzer(String sketchPath, String condaPath) {
+    private SentimentAnalyzer(String sketchPath) {
         this.sentiment = "";
         this.review = "";
         this.score = 0f;
         this.currBucket = 0;
         this.featureManager = new FeatureManager();
         this.buckets = new ArrayList<>();
-        this.condaPath = condaPath;
         this.sketchPath = sketchPath;
     }
 
     /**
+     * @param sketchPath path to the Processing sketch directory
      * @return the single instance of this class with given conda path
      */
-    public static SentimentAnalyzer getInstance(String sketchPath, String condaPath) {
+    public static SentimentAnalyzer getInstance(String sketchPath) {
         if (SentimentAnalyzer.instance == null) {
-            SentimentAnalyzer.instance = new SentimentAnalyzer(sketchPath, condaPath);
+            SentimentAnalyzer.instance = new SentimentAnalyzer(sketchPath);
         }
-        SentimentAnalyzer.instance.condaPath = condaPath;
         SentimentAnalyzer.instance.sketchPath = sketchPath;
         return SentimentAnalyzer.instance;
-    }
-
-    /**
-     * @return the single instance of this class with default conda path: C:\ProgramData\Anaconda3\Scripts
-     */
-    public static SentimentAnalyzer getInstance(String sketchPath) {
-        return SentimentAnalyzer.getInstance(sketchPath, DEFAULT_CONDA_PATH);
     }
 
     /**
@@ -150,7 +137,6 @@ public class SentimentAnalyzer {
         String nlp_dir = this.sketchPath.substring(0, this.sketchPath.lastIndexOf('\\')) + "\\dev";
         String cmd = "cd \"" + this.sketchPath + "\" && " +
                 ".\\SentimentAnalyzer.bat \"" +
-                this.condaPath + "\" \"" +
                 nlp_dir + "\" \"" +
                 this.review + "\"";
         ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", cmd);
@@ -206,6 +192,7 @@ public class SentimentAnalyzer {
         // fill buckets
         // negative parts
         if (negPartSize > 0) {
+            System.out.println("creating neg");
             for (int i = 0; i < this.featureManager.size(); ++i) {
                 this.buckets.add((i + 1) * negPartSize);
             }
@@ -214,13 +201,21 @@ public class SentimentAnalyzer {
         this.buckets.add(this.score + neutralBuffer);
         // positive parts
         if (posPartSize > 0) {
+            System.out.println("creating pos");
             for (int i = 0; i < this.featureManager.size() - 1; ++i) {
                 this.buckets.add(this.buckets.get(this.buckets.size() - 1) + posPartSize);
             }
         }
         // last bucket is always 1
         this.buckets.add(1f);
-        this.currBucket = this.buckets.size() / 2;
+        // assign current bucket
+        this.currBucket = this.buckets.size() / 2; // default
+        for (int i = 0; i < this.buckets.size(); ++i) {
+            if (this.score < this.buckets.get(i)) {
+                this.currBucket = i;
+                break;
+            }
+        }
     }
 
     /**

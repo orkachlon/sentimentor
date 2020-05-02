@@ -31,11 +31,11 @@ class CombinedClassifier:
         self.flair = TextClassifier.load('en-sentiment')
         self.weights = weights
 
-    def predict(self, X: Iterable[str]) -> Union[np.ndarray, pd.Series]:
+    def predict(self, X: Iterable[str]) -> np.ndarray:
         """
         Predicts the scores of the given sample set
         :param X: the sample set
-        :return: prediction over given sample set
+        :return: prediction over given sample set - a value in (-1, 1) <=> (neg, pos)
         """
         as_sentence_obj = list(map(Sentence, X))
         self.flair.predict(as_sentence_obj)

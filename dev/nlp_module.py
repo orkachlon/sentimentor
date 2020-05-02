@@ -1,21 +1,28 @@
 import sys
 import numpy as np
+
 from typing import List, Any
-from textblob import TextBlob
-from flair.data import Sentence
-from flair.models import TextClassifier
 from spellchecker import SpellChecker
 from nltk import pos_tag, word_tokenize
-from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 from text_vectorization import W2v, T2v
+from sentiment_analysis import CombinedClassifier
 
 
 MODIFIERS = {0: 'terrible', 1: 'excellent'}
 ALLOWED_TAGS = {'JJ', 'JJR', 'JJS', 'RB', 'RBR', 'RBS', 'VBG'}
 
 
-def extract_features(review: str, t2v: T2v, w2v: W2v):
+def extract_features(review: str, t2v: T2v, w2v: W2v) -> List[List[str]]:
+    """
+    Extracts the features from given review and finds 2 synonyms for each feature.
+    Feature extraction is done with T2v (tfidf) and the synonyms are found with W2v (Word2Vec).
+    If adjective synonyms are available they'll be taken, otherwise any feature is accepted.
+    :param review: to extract features from
+    :param t2v: TfidfVectorizer as a T2v
+    :param w2v: Word2Vec model as a W2v
+    :return: List of features and their synonyms.
+    """
     # evaluate this review
     feature_scores = t2v.transform([review]).flatten()
     # remove empty values and get the sorting by maximum score first
@@ -29,20 +36,21 @@ def extract_features(review: str, t2v: T2v, w2v: W2v):
     # return synonyms for each feature
     syns = []
     splchkr = SpellChecker()
+    # try to take only adjectives/adverbs
     tag_dict = {w[0]: w[1]
                 for w in pos_tag(word_tokenize(review))
                 if w[1] in ALLOWED_TAGS and w[0].lower() in features}
-    # if none of the features found are in the allowed tags - attempt to use them anyway
+    # if none of the features found are in the allowed tags - use them anyway
     if not len(tag_dict):
         tag_dict = {w[0]: w[1]
                     for w in pos_tag(word_tokenize(review))
                     if w[0].lower() in features}
-
-    used_words = set([f for f in tag_dict.keys()])
+    # find synonyms for each feature
+    used_words = set([f.lower() for f in tag_dict.keys()])
     for f in tag_dict.keys():
         # create list to hold feature in the middle and synonyms from each side
         curr = list([0] * (len(MODIFIERS) + 1))
-        # save with capitalization if it exists!!!
+        # capitalization is preserved
         curr[(len(curr) // 2)] = f
         # convert to lower case for convenience
         f = f.lower()
@@ -56,7 +64,7 @@ def extract_features(review: str, t2v: T2v, w2v: W2v):
                         for w in pos_tag(sim_list)
                         if w[1] in ALLOWED_TAGS and w[0] not in used_words]
             # take the most similar
-            # skip the cell with the feature itself
+            # skip the cell with the feature itself and save with capitalization if needed
             curr[i if i < len(curr) // 2 else i + 1] = sim_list[0] \
                 if curr[len(curr) // 2][0].islower() \
                 else sim_list[0][0].upper() + sim_list[0][1:]
@@ -67,21 +75,22 @@ def extract_features(review: str, t2v: T2v, w2v: W2v):
 
 
 def combined_classification(review: str) -> List[Any]:
-    confidence = 0.0
-    # flair classification
-    flair = TextClassifier.load('en-sentiment')  # type: TextClassifier
-    as_sentence = Sentence(review)
-    flair.predict(as_sentence)
-    confidence += (.9 / 2.1) * as_sentence.labels[0].score
-    # vader classification
-    vader = SentimentIntensityAnalyzer()
-    confidence += (.6 / 2.1) * vader.polarity_scores(review)['compound']
-    # textblob classification
-    confidence += (.6 / 2.1) * TextBlob(review).sentiment.polarity
-    return ["POSITIVE" if confidence > 0 else "NEGATIVE", confidence]
+    """
+    Calculates the combined classification
+    :param review: review to analyze
+    :return: List with first value representing the sentiment via string,
+    the second value is the score itself
+    """
+    classifier = CombinedClassifier()
+    score = classifier.predict([review])[0]
+    return ["POSITIVE" if score > 0 else "NEGATIVE", (score / 2.0) + .5]
 
 
-def main(review: str):
+def main(review: str) -> None:
+    """
+    The main function of this program. Calls the classification and feature extraction functions
+    :param review: review to analyze
+    """
     print(f"Analyzing: {review}")
     w2v = W2v(path="w2v_csv_80.model", load=True)
     t2v = T2v(name="t2v_50k.model")
