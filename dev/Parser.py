@@ -3,7 +3,6 @@ import re
 import mmap
 import contextlib
 from abc import ABC, abstractmethod
-from preprocessing.FileData import ReviewData
 
 
 class Parser(ABC):
@@ -36,11 +35,11 @@ class FileParser(Parser):
 
     def _load_progress(self):
         file_name = os.path.basename(self._path)
-        if os.path.exists("../ml-dataset/parser_progress.txt"):
+        if os.path.exists("../assets/raw/parser_progress.txt"):
             prog_pat = re.compile(r'file_name: (' + file_name +
                                   r')\nnum_reviews: (?P<num_reviews>[0-9]+)'
                                   r'\ncurr_review: (?P<curr_review>[0-9]+)')
-            with open("../ml-dataset/parser_progress.txt", 'r') as info_file:
+            with open("../assets/raw/parser_progress.txt", 'r') as info_file:
                 info = info_file.read()
             m = prog_pat.search(info)
             if m is not None:
@@ -57,7 +56,7 @@ class FileParser(Parser):
                 if line.startswith('product'):
                     self.__num_reviews += 1
 
-        with open('../ml-dataset/parser_progress.txt', 'a') as f:
+        with open('../assets/raw/parser_progress.txt', 'a') as f:
             f.write(f"\nfile_name: {file_name}\n")
             f.write(f"num_reviews: {self.__num_reviews}\n")
             f.write("curr_review: 0\n")
@@ -93,7 +92,7 @@ class FileParser(Parser):
     def next_review(self):
         if not self.can_parse():
             return
-        rev = ReviewData(self._scores[self.__curr_review], self._texts[self.__curr_review])
+        rev = (self._scores[self.__curr_review], self._texts[self.__curr_review])
         self.__curr_review += 1
         return rev
 

@@ -1,7 +1,16 @@
 @echo off
-set review=%1
-cd "C:\ProgramData\Anaconda3\Scripts"
-CALL "C:\ProgramData\Anaconda3\condabin\conda.bat" activate ml-as-tool-project-1
-cd "C:\Users\Or Kachlon\Documents\ml-as-tool\interactive-ml-project-1\dev"
+:: path to conda /Scripts/ dir
+set conda_path=%1
+:: path to sketch directory
+set working_dir=%2
+:: the review to process
+set review=%3
+
+:: activate env
+cd %conda_path%
+CALL activate ml-as-tool-project-1
+:: analyze review
+cd %working_dir%
 CALL python nlp_module.py %review%
-CALL "C:\ProgramData\Anaconda3\condabin\conda.bat" deactivate
+:: deactivate env
+CALL conda deactivate

@@ -6,16 +6,10 @@ __pycache__
 .vscode
 
 # data folders
-dev/ml-dataset
-dev/csv
-dev/clean_csv
-dev/reviewsByStarRating
-dev/test
-dev/reviewSentiment/pickledData
+assets/csv
 
-# models folders
-dev/textVectorization/textVectorizationModels
-dev/reviewSentiment/sentimentClassificationModels
+# assets folders
+assets
 
 # app related folders
 examples
@@ -24,3 +18,10 @@ modes
 templates
 tools
 production
+
+# project slides, plots, etc.
+misc
+
+# test files and folders
+app/SATester.java
+dev/test

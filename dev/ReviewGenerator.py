@@ -1,7 +1,6 @@
 import os
 import random
 import pandas as pd
-from preprocessing.preprocessor import get_text_cleaner
 
 
 class ReviewGenerator:
@@ -16,7 +15,7 @@ class ReviewGenerator:
         self._limit = limit
 
     def iter_scores(self):
-        self._iter_values = 'score'
+        self._iter_values = 'y'
         return iter(self)
 
     def iter_revs(self):
@@ -43,7 +42,7 @@ class ReviewGenerator:
                     for j, row in df.iterrows():
                         if j == self._limit:
                             return
-                        yield row if values == 'row' else row['score'] if values == 'score' else row['text']
+                        yield row if values == 'row' else row['y'] if values == 'y' else row['text']
         else:
             df = pd.read_csv(open(self._path, 'r'), delimiter=',', quotechar='"', escapechar='\\', header=0)
             if self._shuffle:
@@ -51,7 +50,7 @@ class ReviewGenerator:
             for j, row in df.iterrows():
                 if j == self._limit:
                     return
-                yield row if values == 'row' else row['score'] if values == 'score' else row['text']
+                yield row if values == 'row' else row['y'] if values == 'y' else row['text']
 
 
 class BalancedReviewGenerator(ReviewGenerator):
@@ -69,11 +68,11 @@ class BalancedReviewGenerator(ReviewGenerator):
         for j, row in df.iterrows():
             if j == self._limit:
                 return
-            yield row if values == 'row' else row['score'] if values == 'score' else row['text']
+            yield row if values == 'row' else row['y'] if values == 'y' else row['text']
 
     def balance_data(self):
         """
-        Set the limit to the minimum amount of data from a single score
+        Set the limit to the minimum amount of data from a single y
         """
         df = self.as_df()
         for gen in self._gens:
@@ -94,43 +93,52 @@ class BinaryReviewGenerator(ReviewGenerator):
     def __iter__(self):
         values = self._iter_values
         df = pd.read_csv(open(self._path, 'r'),
-                         delimiter=',', quotechar='"', header=0, names=['score', 'text'], encoding='cp1252')
+                         delimiter=',', quotechar='"', header=0, names=['y', 'text'], encoding='cp1252')
         if self._shuffle:
             df = df.sample(frac=1).reset_index(drop=True)
         for i, row in df.iterrows():
             if i == self._limit:
                 break
-            yield row if values == 'row' else row['text'] if values == 'text' else row['score']
+            yield row if values == 'row' else row['text'] if values == 'text' else row['y']
 
     def as_df(self):
         df = pd.read_csv(open(self._path, 'r'),
-                         delimiter=',', quotechar='"', header=0, names=['score', 'text'], encoding='cp1252')
+                         delimiter=',', quotechar='"', header=0, names=['y', 'text'], encoding='cp1252')
         if self._limit:
             df = pd.concat([df.loc[df.score == -1].iloc[: int(self._limit / 2)],
                             df.loc[df.score == 1].iloc[: int(self._limit / 2)]])
         return df if not self._shuffle else df.sample(frac=1).reset_index(drop=True)
 
 
-def clean_review_generator(generator: ReviewGenerator, mode='row', **cleaner_kwargs):
-    cleaner = get_text_cleaner(**cleaner_kwargs)
-    for row in generator:
-        yield (row['score'], cleaner(row['text'])) if mode == 'row' else cleaner(row['text'])
-
-
-if __name__ == '__main__':
-    binary_gen = BinaryReviewGenerator("ml-dataset/bin_train.csv", 10, False)
-
-    # balanced_gen = BalancedReviewGenerator('movies_1', 300)
+def main() -> None:
+    """
+    Performs a sanity check for each generator
+    """
+    # test ReviewGenerator
+    text_gen = ReviewGenerator("../assets/csv/movie_reviews_1.csv", limit=10)
+    i = 0
+    print("ReviewGenerator:")
+    for row in text_gen:
+        print(f"#{i + 1}")
+        print(row)
+        i += 1
+    # test BalancedReviewGenerator
+    balanced_gen = BalancedReviewGenerator('movies_1', 10)
+    print("BalancedReviewGenerator:")
+    i = 0
+    for row in balanced_gen:
+        print(f"#{i + 1}")
+        print(row)
+        i += 1
+    # test BinaryReviewGenerator
+    binary_gen = BinaryReviewGenerator("../assets/raw/bin_train.csv", 10)
+    print("BinaryReviewGenerator:")
     i = 0
     for row in binary_gen:
         print(f"#{i + 1}")
         print(row)
         i += 1
-    # text_gen = ReviewGenerator("csv/movie_reviews_1.csv")
-    # i = 0
-    # for r in text_gen.iter_rows():
-    #     i += 1
-    # print(f"finished iterating over {i} reviews")
-    # d = pd.DataFrame(text_gen)
-    # print(d.shape)
-    # print(d.head())
+
+
+if __name__ == '__main__':
+    main()

@@ -2,24 +2,26 @@ import os
 import re
 import nltk
 import pandas as pd
+import csv
+
+from typing import Tuple, Callable, Union
 from string import punctuation
-from nltk import pos_tag
 from nltk.corpus import stopwords
 from spellchecker import SpellChecker
 
-from preprocessing.Parser import FileParser
-from preprocessing.FileData import *
+from Parser import FileParser
 
 LARGE_INPUT_FILE = '../ml-dataset/movies.txt'
 LARGE_INPUT_FILE_ENCODING = 'iso-8859-1'
 STEP_SIZE = 100000
 CSV_TO_PD_KWARGS = {'delimiter': ',', 'quotechar': '"', 'escapechar': '\\', 'header': 0}
 PD_TO_CSV_KWARGS = {'quotechar': '"', 'escapechar': '\\', 'quoting': csv.QUOTE_NONNUMERIC, 'index': False}
-# regex to add quotes around text in pos/neg review files
-# ADD_QUOTES = re.compile(rb'^(([^"])(.*)([^"])),(pos|neg)$', re.MULTILINE)
 
 
-def parse_file(path: str, step_size: int = STEP_SIZE, encoding: str = LARGE_INPUT_FILE_ENCODING, cleaner=None):
+def parse_file(path: str,
+               step_size: int = STEP_SIZE,
+               encoding: str = LARGE_INPUT_FILE_ENCODING,
+               cleaner: Callable[[Union[str, bytes]], str] = None):
     """
     Parses the Amazon movie review data set into FileData objects and then writes each of them to csv
     :param path: path to Amazon data set
@@ -27,7 +29,7 @@ def parse_file(path: str, step_size: int = STEP_SIZE, encoding: str = LARGE_INPU
     :param encoding: of the amazon data set
     :param cleaner: a text cleaning function to clean the text before writing it back
     """
-    _, file_n = get_file_info(path, os.path.basename(path), encoding)
+    _, file_n = get_file_info(path, os.path.basename(path))
 
     print("Reading input file...")
     parser = FileParser(path, encoding)
@@ -51,17 +53,22 @@ def parse_file(path: str, step_size: int = STEP_SIZE, encoding: str = LARGE_INPU
         file_n += 1
 
 
-def get_file_info(path: str, filename: str, encoding: str = None):
+def get_file_info(path: str, filename: str) -> Tuple[int, int]:
+    """
+    :param path: path to the dataset in case no info is available for it in the info file
+    :param filename: name of the dataset file
+    :return: tuple: (amount of lines in file, the next file number to save to)
+    """
     info_pat = re.compile(r'file_name: (' + filename +
                           r')\nnum_lines: (?P<num_lines>[0-9]+)'
                           r'\nfile_n: (?P<file_n>[0-9]+)\n')
-    if os.path.exists("../ml-dataset/file_info.txt"):
-        with open("../ml-dataset/file_info.txt", 'r') as info_file:
+    if os.path.exists("../assets/raw/file_info.txt"):
+        with open("../assets/raw/file_info.txt", 'r') as info_file:
             info = info_file.read()
         m = info_pat.search(info)
         if m is not None:
             return int(m.group('num_lines')), int(m.group('file_n'))
-    with open(path, 'r', encoding=encoding) as f:
+    with open(path, 'r') as f:
         for i, l in enumerate(f):
             pass
     num_lines = i + 1
@@ -69,29 +76,12 @@ def get_file_info(path: str, filename: str, encoding: str = None):
     return num_lines, file_n
 
 
-def dump_info_file(parser, file_n):
-    with open("../ml-dataset/file_info.txt", 'r+') as info_file:
-        info = info_file.read()
-        info_file.seek(0)
-        info = re.sub(r'curr_review: [0-9]+\n', f'curr_review: {parser.get_curr_review_n() - 1}\n', info)
-        info = re.sub(r'file_n: [0-9]+\n', f'file_n: {file_n}\n', info)
-        info_file.write(info)
-
-
-def convert_to_csv(src, dst):
+def sort_by_rating(src_dir: str, dst_dir: str) -> None:
     """
-    Converts files written in the old output format to csv format
-    :param src: source directory
-    :param dst: destination directory
+    Used to split the 8M Amazon review dataset into files containing reviews only from one score
+    :param src_dir: directory to the dataset as csv files
+    :param dst_dir: where to save the split files
     """
-    files = [f for f in os.listdir(src) if os.path.isfile(os.path.join(src, f)) and f.endswith('.txt')]
-    for i, f in enumerate(files):
-        print(f"{((i / len(files)) * 100):.2f}%")
-        data = FileData(STEP_SIZE, path=os.path.join(src, f), encoding=LARGE_INPUT_FILE_ENCODING)
-        data.write_to_file(os.path.join(dst, f"movie_reviews_{i + 1}.csv"))
-
-
-def sort_by_rating(src_dir, dst_dir):
     for src in os.listdir(src_dir):
         print(f"sorting {src}...")
         src_path = os.path.join(src_dir, src)
@@ -104,6 +94,18 @@ def sort_by_rating(src_dir, dst_dir):
 
 
 def get_text_cleaner(stop=True, punct=True, num=True, html=True, spell=True, alpha_numeric=False, lower=True):
+    """
+    Defines and returns a cleaner function according to given params
+    :param stop: remove stopwords
+    :param punct: remove punctuation
+    :param num: remove numbers
+    :param html: remove html tags
+    :param spell: correct spelling. Note: this takes a lot of time - never fully tried it.
+    :param alpha_numeric: remove any non alpha numeric chars
+    :param lower: convert all to lower case
+    :return: a function that does what the parameters specify
+    """
+    # define all patterns here to do it only once
     punct_cleaner = re.compile(br"[" + re.escape(punctuation).encode('cp1252', 'ignore') + br"]")
     html_cleaner = re.compile(rb'<.*?>|&([a-z0-9]+|#[0-9]{1,6}|#x[0-9a-f]{1,6});', re.MULTILINE)
     num_cleaner = re.compile(rb'([0-9](\.[0-9]*)?)+')
@@ -115,8 +117,14 @@ def get_text_cleaner(stop=True, punct=True, num=True, html=True, spell=True, alp
     stopwrds_cleaner = re.compile(rb'(?<= )(' +
                                   '|'.join(stopwords_set).encode('cp1252', 'ignore') +
                                   br')(?= )')
+    splchkr = SpellChecker()
 
-    def text_cleaner(s: bytes):
+    def text_cleaner(s: bytes) -> str:
+        """
+        a text cleaning function
+        :param s: text to clean
+        :return: cleaned text
+        """
         s = re.sub(r'\\p{L1}}', r'', s.decode('cp1252', 'ignore')).encode('cp1252')
         if alpha_numeric:
             s = non_alpha_numeric.sub(rb'', s)
@@ -125,29 +133,10 @@ def get_text_cleaner(stop=True, punct=True, num=True, html=True, spell=True, alp
         if html:
             s = html_cleaner.sub(b'', s)
         if punct:
-            # method 1:
-            # s = re.sub(rb"['`\".:;?!@#$%^&*(){}\-=+_~/<>,\\|\[\]]", rb'', s)
-            # method 2:
             s = punct_cleaner.sub(br' ', s)
-            # method 3:
-            # words = nltk.word_tokenize(s.decode(LARGE_INPUT_FILE_ENCODING))
-            # s = ' '.join([w for w in words if w not in punctuation])
-            # method 4:
-            # s = s.decode(LARGE_INPUT_FILE_ENCODING, 'ignore')
-            # s = s.translate(str.maketrans('', '', punctuation))
         if num:
             s = num_cleaner.sub(rb'', s)
         if stop:
-            # method 1: DOES NOT WORK FOR BI-GRAMS
-            # ================
-            # try:
-            #     words = nltk.word_tokenize(s.decode('cp1252', 'ignore'))
-            # except AttributeError:
-            #     words = nltk.word_tokenize(s)
-            # s = ' '.join([w for w in words if w not in stopwords_set])
-
-            # method 2:
-            # ================
             s = b' ' + s + b' '
             s = stopwrds_cleaner.sub(br'', s)
             s = re.sub(rb' +', b' ', s)
@@ -156,8 +145,8 @@ def get_text_cleaner(stop=True, punct=True, num=True, html=True, spell=True, alp
             try:
                 words = nltk.word_tokenize(s.decode('cp1252', 'ignore'))
             except AttributeError:
+                # noinspection PyTypeChecker
                 words = nltk.word_tokenize(s)
-            splchkr = SpellChecker()
             s = ' '.join(list(map(splchkr.correction, words)))
         try:
             s = s.decode('cp1252', 'ignore')
@@ -167,12 +156,19 @@ def get_text_cleaner(stop=True, punct=True, num=True, html=True, spell=True, alp
     return text_cleaner
 
 
-def main():
-    parse_file('../ml-dataset/bin_test.csv',
-               cleaner=get_text_cleaner(stop=False, punct=False, num=False, spell=False, lower=False),
-               encoding='utf-8')
-    # sort_by_rating("../csv", "../reviewsByStarRating")
+def main(path_to_file: str,
+         encoding='utf-8',
+         **cleaner_kwargs) -> None:
+    """
+    Cleans specified file
+    :param path_to_file: path to file to be cleaned
+    :param encoding: encoding of the file
+    :param cleaner_kwargs: cleaner parameters
+    """
+    parse_file(path_to_file,
+               cleaner=get_text_cleaner(**cleaner_kwargs),
+               encoding=encoding)
 
 
 if __name__ == '__main__':
-    main()
+    main('../assets/raw/bin_test.csv', stop=False, punct=False, num=False, spell=False, lower=False)

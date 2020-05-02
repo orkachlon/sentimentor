@@ -55,7 +55,7 @@ void setup() {
     submitButton.getCaptionLabel().setFont(new ControlFont(createFont("consolas", 24)));
     
     // initialize the analyzer
-    analyzer = SentimentAnalyzer.getInstance();
+    analyzer = SentimentAnalyzer.getInstance(sketchPath());
     analyzed = false;
 }
 
@@ -113,7 +113,7 @@ public void submit() {
 
 public void sentiment(float score) {
   if (!analyzed) return;
-  review = analyzer.adjust(score, review);
+  review = analyzer.adjust(score);
   textBox.setText(review);
 }
 

@@ -1,5 +1,3 @@
-//package libraries.sentimentAnalysis.src.sentimentAnalysis;
-
 import java.io.*;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -7,46 +5,83 @@ import java.util.regex.Pattern;
 
 
 /**
- * SentimentAnalyzer
+ * A class to analyze reviews and have the option to adjust them based on score
  */
 public class SentimentAnalyzer {
 
+    /** default conda path to use if none was given */
+    private static final String DEFAULT_CONDA_PATH = "C:\\ProgramData\\Anaconda3\\Scripts";
+
+    /** The single instance of this Singleton class*/
     private static SentimentAnalyzer instance = null;
 
-    private static float neutralBuffer = 0.07f;
+    /** The sentiment: 'POSITIVE'/'NEGATIVE' */
+    public String sentiment;
 
-    public String sentiment = "";
+    /** The review */
+    public String review;
 
-    public String review = "";
+    /** path to conda command */
+    private String condaPath;
 
-    public Float score = 0f;
+    /** path to sketch directory */
+    private String sketchPath;
 
-    private int currBucket = 0;
+    /** The score given to the review at analysis */
+    public Float score;
 
-    private FeatureManager featureManager = new FeatureManager();
+    /** Current bucket from buckets that the review is in */
+    private int currBucket;
 
-    private List<Float> buckets = new ArrayList<>();
+    /** The feature manager for the last analyzed review */
+    private FeatureManager featureManager;
 
-    private SentimentAnalyzer() {}
+    /** List of buckets in the range 0-1 to match the adjustment variation levels */
+    private List<Float> buckets;
 
-    public static SentimentAnalyzer getInstance() {
+    /**
+     * private constructor for Singleton design
+     */
+    private SentimentAnalyzer(String sketchPath, String condaPath) {
+        this.sentiment = "";
+        this.review = "";
+        this.score = 0f;
+        this.currBucket = 0;
+        this.featureManager = new FeatureManager();
+        this.buckets = new ArrayList<>();
+        this.condaPath = condaPath;
+        this.sketchPath = sketchPath;
+    }
+
+    /**
+     * @return the single instance of this class with given conda path
+     */
+    public static SentimentAnalyzer getInstance(String sketchPath, String condaPath) {
         if (SentimentAnalyzer.instance == null) {
-            SentimentAnalyzer.instance = new SentimentAnalyzer();
+            SentimentAnalyzer.instance = new SentimentAnalyzer(sketchPath, condaPath);
         }
+        SentimentAnalyzer.instance.condaPath = condaPath;
+        SentimentAnalyzer.instance.sketchPath = sketchPath;
         return SentimentAnalyzer.instance;
     }
-    
-    public boolean analyzed() {
-      return this.featureManager.size() > 0;
+
+    /**
+     * @return the single instance of this class with default conda path: C:\ProgramData\Anaconda3\Scripts
+     */
+    public static SentimentAnalyzer getInstance(String sketchPath) {
+        return SentimentAnalyzer.getInstance(sketchPath, DEFAULT_CONDA_PATH);
     }
 
+    /**
+     * Analyzes the given review and saves its features for later adjustment
+     * @param review the review to analyze
+     */
     public void analyze(String review) {
         this.review = review;
         this.featureManager.clear();
         this.buckets.clear();
         try {
           getReviewAnalysis();
-          System.out.println(this.featureManager.toString());
         } catch (IOException e) {
           System.err.println("IOException occurred when trying to analyze review");
         }
@@ -55,16 +90,17 @@ public class SentimentAnalyzer {
         }
     }
 
-    public String adjust(Float score, String review) throws RuntimeException {
+    /**
+     * Matches the review sentiment to the given score. Must call analyze beforehand.
+     * @param score  the score to make the review match to
+     * @return the review adjusted to fit the given score
+     * @throws RuntimeException if not review has been analyzed yet
+     */
+    public String adjust(Float score) throws RuntimeException {
         if (this.review.length() == 0) {
             throw new RuntimeException("Must call analyze before adjust!");
         }
-        if (this.score - neutralBuffer < score && score < this.score + neutralBuffer) {
-          this.featureManager.reset();
-          this.currBucket = this.buckets.size() / 2;
-          return this.review;
-        }
-        String synonym, prev, newReview = review;
+        String synonym, prev;
         Feature lastChanged;
         int bucket = Collections.binarySearch(this.buckets, score);
         if (bucket < 0) {
@@ -84,7 +120,7 @@ public class SentimentAnalyzer {
                     }
                     prev = lastChanged.getPrev();
                     synonym = lastChanged.toString();
-                    newReview = newReview.replaceAll(prev, synonym);
+                    this.review = this.review.replaceAll(prev, synonym);
                 }
             }
         } else if (bucket > this.currBucket) {
@@ -97,20 +133,27 @@ public class SentimentAnalyzer {
                     }
                     prev = lastChanged.getPrev();
                     synonym = lastChanged.toString();
-                    newReview = newReview.replaceAll(prev, synonym);
+                    this.review = this.review.replaceAll(prev, synonym);
                 }
             }
         }
         this.currBucket = bucket;
-        return newReview;
+        return this.review;
     }
 
+    /**
+     * Uses the python part of the program to analyze the given review
+     * @throws IOException if the reader fails to read the process
+     */
     private void getReviewAnalysis() throws IOException {
         // Process build and execution
-        //System.out.println(this.review);
-        ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c",
-                "cd \"C:\\Users\\Or Kachlon\\Documents\\ml-as-tool\\interactive-ml-project-1\\app\" && " +
-                        ".\\SentimentAnalyzer.bat \"" + this.review + "\"");
+        String nlp_dir = this.sketchPath.substring(0, this.sketchPath.lastIndexOf('\\')) + "\\dev";
+        String cmd = "cd \"" + this.sketchPath + "\" && " +
+                ".\\SentimentAnalyzer.bat \"" +
+                this.condaPath + "\" \"" +
+                nlp_dir + "\" \"" +
+                this.review + "\"";
+        ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", cmd);
         builder.redirectErrorStream(true);
         Process process = builder.start();
         BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -152,28 +195,46 @@ public class SentimentAnalyzer {
         this.createBuckets();
     }
 
+    /**
+     * Creates the partitions of 0-1 based on the amount of features found
+     */
     private void createBuckets() {
         // calculate how many pos/neg partitions fit between old and new scores
+        float neutralBuffer = 0.07f;
         float negPartSize = (this.score - neutralBuffer) / this.featureManager.size();
         float posPartSize = (1 - this.score - neutralBuffer) / this.featureManager.size();
         // fill buckets
         // negative parts
-        for (int i = 0; i < this.featureManager.size(); ++i) {
-            this.buckets.add((i + 1) * negPartSize);
+        if (negPartSize > 0) {
+            for (int i = 0; i < this.featureManager.size(); ++i) {
+                this.buckets.add((i + 1) * negPartSize);
+            }
         }
         // neutral buffer
         this.buckets.add(this.score + neutralBuffer);
         // positive parts
-        for (int i = 0; i < this.featureManager.size(); ++i) {
-            this.buckets.add(this.buckets.get(this.buckets.size() - 1) + posPartSize);
+        if (posPartSize > 0) {
+            for (int i = 0; i < this.featureManager.size() - 1; ++i) {
+                this.buckets.add(this.buckets.get(this.buckets.size() - 1) + posPartSize);
+            }
         }
+        // last bucket is always 1
+        this.buckets.add(1f);
         this.currBucket = this.buckets.size() / 2;
-        System.out.println(this.buckets.size() + " buckets created:");
-        System.out.println(this.buckets);
     }
 
+    /**
+     * @return The review at its current state
+     */
     @Override
     public String toString() {
         return this.review;
+    }
+
+    /**
+     * @return true iff a review has been analyzed
+     */
+    public boolean analyzed() {
+        return this.featureManager.size() > 0;
     }
 }

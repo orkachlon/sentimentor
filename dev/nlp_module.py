@@ -1,4 +1,3 @@
-import re
 import sys
 import numpy as np
 from typing import List, Any
@@ -6,10 +5,10 @@ from textblob import TextBlob
 from flair.data import Sentence
 from flair.models import TextClassifier
 from spellchecker import SpellChecker
-from nltk import pos_tag
+from nltk import pos_tag, word_tokenize
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
-from textVectorization.text_vectorization import W2v, T2v
+from text_vectorization import W2v, T2v
 
 
 MODIFIERS = {0: 'terrible', 1: 'excellent'}
@@ -31,11 +30,12 @@ def extract_features(review: str, t2v: T2v, w2v: W2v):
     syns = []
     splchkr = SpellChecker()
     tag_dict = {w[0]: w[1]
-                for w in pos_tag(re.sub(r"[^a-zA-Z0-9\s]", " ", review).split())
+                for w in pos_tag(word_tokenize(review))
                 if w[1] in ALLOWED_TAGS and w[0].lower() in features}
+    # if none of the features found are in the allowed tags - attempt to use them anyway
     if not len(tag_dict):
         tag_dict = {w[0]: w[1]
-                    for w in pos_tag(re.sub(r"[^a-zA-Z0-9\s]", " ", review).split())
+                    for w in pos_tag(word_tokenize(review))
                     if w[0].lower() in features}
 
     used_words = set([f for f in tag_dict.keys()])
@@ -83,7 +83,7 @@ def combined_classification(review: str) -> List[Any]:
 
 def main(review: str):
     print(f"Analyzing: {review}")
-    w2v = W2v(path="textVectorization/textVectorizationModels/csv_80.model", load=True)
+    w2v = W2v(path="w2v_csv_80.model", load=True)
     t2v = T2v(name="t2v_50k.model")
     print(combined_classification(review))
     print(extract_features(review, t2v, w2v))
