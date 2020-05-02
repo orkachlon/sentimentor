@@ -11,6 +11,7 @@ Installation
 ------------
 
 ### Dependencies
+
 #### Anaconda
 An installation of [Anaconda](https://www.anaconda.com/products/individual) 
 is assumed to be available at `C:\ProgramData\Anaconda` along 
@@ -23,6 +24,7 @@ The following python packages need to be available in the conda env:
 - [textblob](https://textblob.readthedocs.io/en/dev/)
 - [numpy](https://numpy.org/)
 - [spellchecker](https://github.com/barrust/pyspellchecker)
+
 #### Processing
 This app requires an installation of [Processing 3.5.4](https://processing.org/) and the 
 [ControlP5](http://www.sojamo.de/libraries/controlP5/) library
@@ -97,7 +99,7 @@ root/
 References
 ----------
 Not all of these references are used in the project but all of them helped me
-learn and develop this project.
+learn this topic and develop this project.
 
 - [Possible entire implementation of classifier including access to influential words](
 https://towardsdatascience.com/basic-binary-sentiment-analysis-using-nltk-c94ba17ae386)
