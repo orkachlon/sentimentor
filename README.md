@@ -29,14 +29,20 @@ The following python packages need to be available in the conda env:
 This app requires an installation of [Processing 3.5.4](https://processing.org/) and the 
 [ControlP5](http://www.sojamo.de/libraries/controlP5/) library
 
+### Additional instructions
+The trained vectorizers' files are too big to add to this repository so you will need to download
+them from my [google drive](
+https://drive.google.com/drive/folders/1TCdIGDfix0OMFAbUtn0UaX1T3gYs4jDA?usp=sharing)
+and place the assets folder as shown in the Directory tree below.
+
 Instructions
 ------------
 
-1. write review
-2. submit
-3. score is predicted onto slider
-4. use slider to change sentiment
-5. type another review to start again
+1. Write review
+2. Submit
+3. Score is predicted onto slider
+4. Use slider to change sentiment
+5. Type another review to start again
 
 Files
 -----
