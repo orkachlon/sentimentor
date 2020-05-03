@@ -43,7 +43,7 @@ void setup() {
                       .setPosition(width - 60, 50)
                       .setSize(30, height - 140)
                       .setRange(0.0, 1.0)
-                      .setValue(0.5)
+                      .setValue(0.0)
                       .setLabelVisible(false)
                       .lock()
                       ;

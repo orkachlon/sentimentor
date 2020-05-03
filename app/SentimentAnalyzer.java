@@ -192,7 +192,6 @@ public class SentimentAnalyzer {
         // fill buckets
         // negative parts
         if (negPartSize > 0) {
-            System.out.println("creating neg");
             for (int i = 0; i < this.featureManager.size(); ++i) {
                 this.buckets.add((i + 1) * negPartSize);
             }
@@ -201,7 +200,6 @@ public class SentimentAnalyzer {
         this.buckets.add(this.score + neutralBuffer);
         // positive parts
         if (posPartSize > 0) {
-            System.out.println("creating pos");
             for (int i = 0; i < this.featureManager.size() - 1; ++i) {
                 this.buckets.add(this.buckets.get(this.buckets.size() - 1) + posPartSize);
             }
