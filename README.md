@@ -77,6 +77,17 @@ interactive-ml-project-1/
     └── text_vectorization.py
 ```
 
+Implementation details
+----------------------
+**Classification**: reviews are classified using a weighted sum of vader, flair and textblob text classifiers.
+
+**Feature extraction**: features are extracted using a tfidf vectorizer trained with a given vocabulary.
+
+**Synonym generation**:  synonyms are generated using gensim's Word2Vec on the found features.
+
+**Word swapping**: a bucket system is created, where each bucket represents a different word swap. Each transition
+between buckets swaps a single word.
+
 ### File description
 `dev/`:
 - `Parser.py`: a parser for the Amazon 8M review and the IMDB 50K review datasets
