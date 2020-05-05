@@ -19,6 +19,7 @@ misc
 # test files and folders
 app/SATester.java
 dev/test
+dev/nlp_tester.py
 
 # tar
 *.tar
