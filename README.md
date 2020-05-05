@@ -4,8 +4,10 @@ First project in the course 'Machine learning as a tool for interactive products
 Description
 -----------
 
-This research project attempts to test a machine's ability to recognize and take part in textual 
-sentimentality.
+In this project I explore the ability of a machine to identify and manipulate textual emotion using various ML models.
+
+The program accepts text containing sentiment, predicts its score onto a slider, and then allows the user to move that slider to gradually increase or decrease the positivity of the text.
+
 
 Installation
 ------------
