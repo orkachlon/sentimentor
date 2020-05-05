@@ -9,37 +9,39 @@ sentimentality.
 
 Installation
 ------------
+To run the program run `app.pde` in the `app` folder. Please note the dependedncies first.
 
 ### Dependencies
 #### OS
-This program currently only runs on Windows.
+This program currently runs only on Windows.
 #### Anaconda
 An installation of [Anaconda](https://www.anaconda.com/products/individual) 
-is needed with python 3.7 at least, and the `conda` command should be recognized from cmd.exe. 
+is needed with python 3.7, and the `conda` command should be recognized from cmd.exe. 
 Also, a conda environment named `"ml-as-tool-project-1"` should be ready with
 the following packages installed:
-- [gensim](https://radimrehurek.com/gensim/)
-- [flair](https://github.com/flairNLP/flair)
-- [sklearn](https://scikit-learn.org/stable/)
-- [nltk](https://www.nltk.org/)
-- [textblob](https://textblob.readthedocs.io/en/dev/)
-- [numpy](https://numpy.org/)
-- [spellchecker](https://github.com/barrust/pyspellchecker)
-- [pandas](https://pandas.pydata.org/)
-- [matplotlib](https://matplotlib.org/)
-- [seaborn](https://seaborn.pydata.org/)
+
+| package                                                   | version |
+|-----------------------------------------------------------|---------|
+| [gensim](https://radimrehurek.com/gensim/)                | 3.8.1   |
+| [flair](https://github.com/flairNLP/flair)                | 0.4.5   |
+| [sklearn](https://scikit-learn.org/stable/)               | 0.22.1  |
+| [nltk](https://www.nltk.org/)                             | 3.4.4   |
+| [textblob](https://textblob.readthedocs.io/en/dev/)       | 0.15.3  |
+| [numpy](https://numpy.org/)                               | 1.18.1  |
+| [spellchecker](https://github.com/barrust/pyspellchecker) | 0.5.3   |
+| [pandas](https://pandas.pydata.org/)                      | 1.0.3   |
+| [matplotlib](https://matplotlib.org/)                     | 3.2.1   |
+| [seaborn](https://seaborn.pydata.org/)                    | 0.10.0  |
 
 #### Processing
-This app requires an installation of [Processing 3.5.4](https://processing.org/) and the 
-[ControlP5](http://www.sojamo.de/libraries/controlP5/) library
+This app requires an installation of [Processing 3.5.4](https://processing.org/) with [java 8](https://www.oracle.com/java/technologies/javase-jdk8-downloads.html)
+and the [ControlP5](http://www.sojamo.de/libraries/controlP5/) library.
 
 ### Additional instructions
 The trained vectorizers' files are too big to add to this repository so you will need to download
 them from my [google drive](
 https://drive.google.com/drive/folders/1TCdIGDfix0OMFAbUtn0UaX1T3gYs4jDA?usp=sharing)
 and place the assets folder as shown in the Directory tree below.
-
-#### Finally run `app.pde` to run the program!
 
 Instructions
 ------------
