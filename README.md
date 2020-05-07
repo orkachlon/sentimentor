@@ -39,7 +39,7 @@ the following packages installed:
 This app requires an installation of [Processing 3.5.4](https://processing.org/) with [java 8](https://www.oracle.com/java/technologies/javase-jdk8-downloads.html)
 and the [ControlP5](http://www.sojamo.de/libraries/controlP5/) library.
 
-### Additional instructions
+#### Additional dependencies
 The trained vectorizers' files are too big to add to this repository so you will need to download
 them from my [google drive](
 https://drive.google.com/drive/folders/1TCdIGDfix0OMFAbUtn0UaX1T3gYs4jDA?usp=sharing)
@@ -85,7 +85,7 @@ Implementation details
 ----------------------
 **Classification**: reviews are classified using a weighted sum of vader, flair and textblob text classifiers.
 
-**Feature extraction**: features are extracted using a tfidf vectorizer trained with a given vocabulary.
+**Feature extraction**: features are extracted using a tf-idf vectorizer trained with a given vocabulary.
 
 **Synonym generation**:  synonyms are generated using gensim's Word2Vec on the found features.
 

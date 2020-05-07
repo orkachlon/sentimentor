@@ -35,7 +35,8 @@ class CombinedClassifier:
         """
         Predicts the scores of the given sample set
         :param X: the sample set
-        :return: prediction over given sample set - a value in (-1, 1) <=> (neg, pos)
+        :return: prediction over given sample set - a value in (-1, 1)
+        where neg = -1 and pos = 1
         """
         as_sentence_obj = list(map(Sentence, X))
         self.flair.predict(as_sentence_obj)
@@ -91,20 +92,32 @@ def log_classifier(classifier,
 
 def plot_confusion(classifier: CombinedClassifier,
                    X: Iterable[str],
-                   y: Union[np.ndarray, pd.Series]) -> None:
+                   y: Union[np.ndarray, pd.Series],
+                   as_ratio=False) -> None:
     """
     Plots the confusion matrix of the given classifier on the given test set
     :param classifier: TrainedTextualClassifier instance
     :param X: test set
     :param y: test labels
+    :param as_ratio: whether to plot the ratios or actual amounts
     """
     score = classifier.score(X, y)
-    df_cm = pd.DataFrame(np.array([[score['TP'], score['FP']],
-                                   [score['FN'], score['TN']]]) /
-                         (score['TP'] + score['FP'] + score['TN'] + score['FN']),
-                         index=['pos', 'neg'], columns=['pos', 'neg'])
+    data = np.array([[score['TP'], score['FP']], [score['FN'], score['TN']]])
+    data = data / data.sum() if as_ratio else data
+    plot_mat(data)
+
+
+def plot_mat(matrix: np.ndarray) -> None:
+    """
+    Plots given matrix
+    :param matrix: to plot
+    """
+    df_cm = pd.DataFrame(matrix, index=['pos', 'neg'], columns=['pos', 'neg'])
     plt.figure()
-    sns.heatmap(df_cm, annot=True, center=.5)
+    sns.heatmap(df_cm,
+                annot=True,
+                center=np.max(matrix),
+                fmt=".02f" if np.all(0 <= df_cm.to_numpy()) and np.all(df_cm.to_numpy() <= 1) else "d")
     plt.show()
 
 
