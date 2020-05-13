@@ -60,7 +60,7 @@ void setup() {
 }
 
 void draw() {
-    background(BGColor);
+    background(textBGColor);
 }
 
 void keyPressed() {
