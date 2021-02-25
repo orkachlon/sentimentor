@@ -1,4 +1,4 @@
-# interactive-ml-project-1
+# Sentimentor
 First project in the course 'Machine learning as a tool for interactive products'
 
 Description
